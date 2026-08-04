@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <title>TITU EV | Live Stream</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+
+  <!-- Shaka Player UI -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.6.0/shaka-player.ui.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.6.0/controls.min.css" />
+
+  <!-- JW Player -->
+  <script src="https://cdn.jwplayer.com/libraries/SAHhwvZq.js"></script>
+
+  <style>
+    html, body {
+      width: 100%; height: 100%; margin: 0; padding: 0;
+      background-color: #000 !important; overflow: hidden; font-family: sans-serif;
+    }
+
+    /* Shaka Fullscreen Container Fixes */
+    .shaka-video-container { width: 100%; height: 100%; background-color: #000; }
+    .shaka-video-container video {
+      width: 100%; height: 100%; object-fit: contain; position: relative; transform: none !important;
+    }
+
+    .shaka-video-container:fullscreen,
+    .shaka-video-container:-webkit-full-screen {
+      position: fixed !important; top: 0 !important; left: 0 !important;
+      width: 100vw !important; height: 100vh !important; background-color: #000 !important;
+    }
+
+    #jw-player-container {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 50; display: none;
+    }
+  </style>
+</head>
+<body class="bg-black text-white m-0 p-0 w-screen h-screen">
+
+<div id="video-container" class="relative w-full h-full flex items-center justify-center bg-black overflow-hidden">
+
+  <!-- Loading Overlay -->
+  <div id="loader" class="absolute inset-0 bg-black/90 z-[2000] flex flex-col items-center justify-center transition-opacity">
+    <div class="text-6xl animate-spin text-orange-500">❄️</div>
+    <div id="loadingText" class="mt-4 text-xs tracking-widest text-gray-300 uppercase animate-pulse">DECRYPTING STREAM...</div>
+  </div>
+
+  <!-- Unmute Button -->
+  <button id="unmute-btn" class="hidden absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1500] btn btn-danger rounded-pill px-4 py-2 font-bold shadow-lg animate-bounce">
+    <span class="material-icons-round align-middle me-1">volume_off</span> TAP TO UNMUTE
+  </button>
+
+  <!-- Top Bar Controls -->
+  <div class="absolute top-3 left-3 right-3 z-[1000] flex items-center justify-between pointer-events-none">
+    <div class="flex items-center gap-2 pointer-events-auto">
+      <a href="index.html" class="btn btn-outline-light btn-sm backdrop-blur-md border-white/20">← Back</a>
+      <button id="switch-player-btn" class="btn btn-warning btn-sm font-bold shadow">Switch Player (JW)</button>
+    </div>
+
+    <!-- Titu & EV Logo Watermark -->
+    <div class="bg-black/60 backdrop-blur-md border border-white/10 rounded-lg px-3 py-1 flex items-center gap-2 pointer-events-auto">
+      <img id="tituWatermark" src="" class="h-6 object-contain" alt="Titu Logo">
+      <span class="text-xs font-bold text-gray-300" id="matchTitle">LIVE</span>
+    </div>
+  </div>
+
+  <!-- Primary Shaka Player Container -->
+  <div id="shaka-wrapper" class="absolute inset-0 z-10">
+    <div id="controls" class="w-full h-full">
+      <video id="video" class="w-full h-full object-contain" autoplay muted playsinline></video>
+    </div>
+  </div>
+
+  <!-- Backup JW Player Container -->
+  <div id="jw-player-container"></div>
+</div>
+
+<script src="config.js"></script>
+
+<script>
+let currentPayload = null;
+let activeServerType = "amazon_server";
+let isJwActive = false;
+
+document.addEventListener("DOMContentLoaded", async () => {
+  document.getElementById("tituWatermark").src = CONFIG.TITU_LOGO;
+
+  const rawPayload = sessionStorage.getItem("__EV_TITU_STREAM__");
+  activeServerType = sessionStorage.getItem("__EV_TITU_SERVER__") || "amazon_server";
+
+  if (!rawPayload) {
+    alert("No Stream Session Found. Redirecting to Dashboard.");
+    window.location.href = "index.html";
+    return;
+  }
+
+  try {
+    currentPayload = JSON.parse(decodeURIComponent(escape(atob(rawPayload))));
+    document.getElementById("matchTitle").textContent = currentPayload.name || "Live Stream";
+  } catch(e) {
+    alert("Invalid Security Session.");
+    window.location.href = "index.html";
+    return;
+  }
+
+  // Initialize Primary Shaka Player
+  initShakaPlayer();
+
+  document.getElementById("switch-player-btn").onclick = togglePlayerEngine;
+});
+
+function getStreamUrl() {
+  const s = currentPayload.servers || {};
+  return s[activeServerType] || s.amazon_server || s.cloudfront_server || s.akamai_server || "";
+}
+
+function parseDRM(drmStr) {
+  if (!drmStr || !drmStr.includes(':')) return null;
+  const parts = drmStr.split(':');
+  let obj = {};
+  obj[parts[0].trim().toLowerCase()] = parts[1].trim().toLowerCase();
+  return obj;
+}
+
+// 1. SHAKA PLAYER ENGINE
+async function initShakaPlayer() {
+  shaka.polyfill.installAll();
+  if (!shaka.Player.isBrowserSupported()) {
+    alert("Browser Not Supported");
+    return;
+  }
+
+  const video = document.getElementById("video");
+  const uiContainer = document.getElementById("controls");
+  const player = new shaka.Player(video);
+  const ui = new shaka.ui.Overlay(player, uiContainer, video);
+
+  ui.configure({
+    controlPanelElements: ["play_pause", "time_and_duration", "spacer", "mute", "volume", "quality", "fullscreen"]
+  });
+
+  const parsedDrm = parseDRM(currentPayload.drm);
+  if (parsedDrm) {
+    player.configure({ drm: { clearKeys: parsedDrm } });
+  }
+
+  try {
+    await player.load(getStreamUrl());
+    hideLoader();
+
+    const playPromise = video.play();
+    if (playPromise !== undefined) {
+      playPromise.then(() => {
+        if (video.muted) showUnmuteBtn(video);
+      }).catch(() => showUnmuteBtn(video));
+    }
+  } catch (err) {
+    console.error(err);
+    hideLoader();
+    alert("Shaka Playback Error. Switching to Backup JW Player...");
+    togglePlayerEngine();
+  }
+}
+
+// 2. JW PLAYER ENGINE (BACKUP)
+function initJWPlayer() {
+  jwplayer.key = CONFIG.JW_KEY;
+  const parsedDrm = parseDRM(currentPayload.drm);
+  
+  let jwDrmObj = {};
+  if (parsedDrm) {
+    const keyId = Object.keys(parsedDrm)[0];
+    jwDrmObj = {
+      clearkey: {
+        keyId: keyId,
+        key: parsedDrm[keyId]
+      }
+    };
+  }
+
+  jwplayer("jw-player-container").setup({
+    file: getStreamUrl(),
+    drm: jwDrmObj,
+    width: "100%",
+    height: "100%",
+    autostart: true,
+    stretching: "uniform",
+    logo: { file: CONFIG.TITU_LOGO, position: "top-right", margin: "15" }
+  });
+}
+
+function togglePlayerEngine() {
+  const shakaWrap = document.getElementById("shaka-wrapper");
+  const jwWrap = document.getElementById("jw-player-container");
+  const btn = document.getElementById("switch-player-btn");
+
+  if (!isJwActive) {
+    shakaWrap.style.display = "none";
+    jwWrap.style.display = "block";
+    btn.textContent = "Switch Player (Shaka)";
+    isJwActive = true;
+    initJWPlayer();
+  } else {
+    jwWrap.style.display = "none";
+    shakaWrap.style.display = "block";
+    btn.textContent = "Switch Player (JW)";
+    isJwActive = false;
+  }
+}
+
+function showUnmuteBtn(videoElem) {
+  const btn = document.getElementById("unmute-btn");
+  btn.classList.remove("hidden");
+  btn.onclick = () => {
+    videoElem.muted = false;
+    videoElem.play();
+    btn.classList.add("hidden");
+  };
+}
+
+function hideLoader() {
+  document.getElementById("loader").style.display = "none";
+}
+
+// ANTI-EXTRACTABLE SECURITY (CONSOLE BLOCK & KEY DISABLE)
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.onkeydown = function(e) {
+  if (e.keyCode == 123) return false;
+  if (e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) return false;
+  if (e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) return false;
+  if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false;
+};
+
+// Anti Debugger Loop
+setInterval(() => {
+  console.clear();
+}, 1000);
+</script>
+
+</body>
+</html>
