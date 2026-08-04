@@ -3,7 +3,7 @@ const CONFIG = {
   JSON_URL: "https://sonujson-devloper.vercel.app/Data/prime.json",
   
   // लोगो URLs
-  TITU_LOGO: "https://titu.ct.ws/assets/logo.png",
+  TITU_LOGO: "https://ibb.co/3Pm7MKj",
   EV_LOGO: "https://raw.githubusercontent.com/saptarshiorg/saptarshiorg.github.io/refs/heads/main/magenta.png",
   FANCODE_LOGO: "https://www.fancode.com/skillup-uploads/fc-web-logo/fc_logo_white_bg.svg",
   FALLBACK_IMG: "https://www.fancode.com/skillup-uploads/cms-media/Cricket_Fallback_Old_match-card.jpg",
