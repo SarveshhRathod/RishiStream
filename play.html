@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
   <meta name="theme-color" content="#000000">
-  <title>EV SPORTS — Anti-Stuck Stream Player</title>
+  <title>EV SPORTS — Fast Buffer Stream Player</title>
 
   <!-- Fonts & Icons -->
   <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
@@ -218,12 +218,12 @@
     <!-- Engine Selector -->
     <div class="relative">
       <button id="btnEngine" class="top-btn" style="border-color: rgba(255,122,26,0.4); color: var(--ev-orange);">
-        <span id="lblEngine">⚡ Anti-Stuck Engine</span>
+        <span id="lblEngine">⚡ Ultra Fast Engine</span>
         <span class="material-icons-round text-sm">expand_more</span>
       </button>
       <div class="pop-menu" id="menuEngine">
         <div class="pop-menu-title">Select Engine</div>
-        <div class="pop-menu-item active" onclick="switchEngine('shaka')">⚡ Engine 1: Anti-Stuck Shaka</div>
+        <div class="pop-menu-item active" onclick="switchEngine('shaka')">⚡ Engine 1: Fast Shaka (1s Buffer)</div>
         <div class="pop-menu-item" onclick="switchEngine('jw')">🍿 Engine 2: JW Player</div>
         <div class="pop-menu-item" onclick="switchEngine('fc')">🔥 Engine 3: FC HLS Engine</div>
       </div>
@@ -239,8 +239,8 @@
     <div class="loader-core"></div>
   </div>
   <div class="loading-text">
-    <div class="loading-label" id="loaderLabel">Optimizing Buffer</div>
-    <div class="loading-sub">Connecting Anti-Stuck Live Stream...</div>
+    <div class="loading-label" id="loaderLabel">Starting Playback</div>
+    <div class="loading-sub">Connecting Fast Stream (1s Buffer)...</div>
   </div>
 </div>
 
@@ -330,7 +330,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupFCControls();
 });
 
-function showLoader(msg = "Optimizing Buffer") {
+function showLoader(msg = "Starting Playback") {
   document.getElementById("loaderLabel").textContent = msg;
   document.getElementById("loading-screen").style.display = "flex";
   document.getElementById("error-screen").classList.remove("show");
@@ -360,12 +360,12 @@ function parseDRM(drmStr) {
   return obj;
 }
 
-// 1. OPTIMIZED ANTI-STUCK SHAKA ENGINE
+// 1. FAST BUFFER SHAKA PLAYER ENGINE
 async function initShakaMainEngine() {
   shaka.polyfill.installAll();
   if (!shaka.Player.isBrowserSupported()) return;
 
-  showLoader("Connecting Anti-Stuck Buffer...");
+  showLoader("Connecting Fast Stream...");
 
   if (shakaPlayer) {
     try { await shakaPlayer.destroy(); } catch(e) {}
@@ -379,19 +379,19 @@ async function initShakaMainEngine() {
     request.headers['Referer'] = 'https://watch.tataplay.com/';
   });
 
-  // ANTI-STUCK & BUFFER OPTIMIZATION CONFIGURATION
+  // ULTRA FAST 1s REBUFFERING & 4s BUFFERING GOAL CONFIG
   shakaPlayer.configure({
     streaming: {
-      bufferingGoal: 15,          // Load 15s buffer ahead
-      rebufferingGoal: 2,         // Instant playback as soon as 2s is loaded
-      bufferBehind: 30,           // Free RAM behind 30s to prevent mobile browser freeze
+      rebufferingGoal: 1,         // Initial playback starts immediately after 1s buffer
+      bufferingGoal: 4,           // Forward buffer limit set to 4s for zero-lag live playback
+      bufferBehind: 20,           // Free RAM behind to prevent mobile freeze
       jumpLargeGaps: true,        // Auto skip missing CDN gaps without freezing
       stallEnabled: true,         // Enable stall detector
       stallThreshold: 1.0,        // Detect stall after 1s
       stallSkip: 0.5,             // Jump 0.5s forward on stall to unfreeze video
       alwaysStreamText: false,
       retryParameters: {
-        timeout: 10000,
+        timeout: 8000,
         maxAttempts: 3,
         baseDelay: 500,
         backoffFactor: 1.5
@@ -399,8 +399,8 @@ async function initShakaMainEngine() {
     },
     abr: {
       enabled: true,
-      defaultBandwidthEstimate: 2000000, // Start with smooth 720p/1080p
-      switchInterval: 8
+      defaultBandwidthEstimate: 1500000,
+      switchInterval: 5
     }
   });
 
@@ -408,13 +408,6 @@ async function initShakaMainEngine() {
   if (parsedDrm) {
     shakaPlayer.configure({ drm: { clearKeys: parsedDrm } });
   }
-
-  // Handle Buffer Stalls Automatically
-  shakaPlayer.addEventListener('buffering', (e) => {
-    if (e.buffering) {
-      console.log('Buffering detected... recovering...');
-    }
-  });
 
   try {
     const streamUrl = getStreamUrl();
@@ -473,7 +466,7 @@ function switchEngine(engineType) {
   shell.style.display = "block";
 
   if (engineType === 'shaka') {
-    lblEngine.textContent = "⚡ Anti-Stuck Engine";
+    lblEngine.textContent = "⚡ Fast Engine";
     initShakaMainEngine();
   } else if (engineType === 'jw') {
     lblEngine.textContent = "🍿 JW Player";
