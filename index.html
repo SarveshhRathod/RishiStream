@@ -11,136 +11,195 @@
 
 <style>
 :root{
-  --bg:#0a0b0d;
-  --card:#131519;
-  --card-2:#1a1d22;
-  --border:#26292f;
-  --muted:#868b94;
-  --text:#f5f6f8;
-  --orange:#ff5a1f;
-  --orange-deep:#e8380d;
-  --orange-soft:rgba(255,90,31,.14);
-  --orange-soft-border:rgba(255,90,31,.4);
-  --live:#ff5a1f;
+  --bg: #07080a;
+  --card: #111318;
+  --card-hover: #161a22;
+  --card-2: #181c24;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-hover: rgba(255, 90, 31, 0.45);
+  --muted: #828894;
+  --text: #f8fafc;
+  --orange: #ff5a1f;
+  --orange-deep: #e0440b;
+  --orange-glow: rgba(255, 90, 31, 0.25);
+  --orange-soft: rgba(255, 90, 31, 0.12);
 }
 
 *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 html,body{ margin:0; padding:0; }
 body{
-  background:var(--bg);
-  color:var(--text);
-  font-family:'Satoshi', 'Segoe UI', Arial, sans-serif;
-  -webkit-font-smoothing:antialiased;
-  user-select:none;
-  -webkit-user-select:none;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Satoshi', 'Segoe UI', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  -webkit-user-select: none;
+  min-height: 100vh;
 }
 button, input{ font-family:inherit; }
 img{ -webkit-user-drag:none; }
 
-.app{ max-width:1360px; margin:0 auto; padding:0 20px 60px; }
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: #1f2430; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--orange); }
 
+.app{ max-width: 1380px; margin: 0 auto; padding: 0 20px 60px; }
+
+/* Cool Glassmorphism Header */
 header{
-  position:sticky; top:0; z-index:40;
-  display:flex; align-items:center; justify-content:space-between;
-  gap:16px; flex-wrap:wrap;
-  padding:18px 4px;
-  background:rgba(10,11,13,0.9);
-  -webkit-backdrop-filter:blur(10px);
-  backdrop-filter:blur(10px);
-  border-bottom:1px solid var(--border);
-  margin-bottom:26px;
-}
-.brand{ display:flex; align-items:center; gap:12px; }
-.brand-logos{ display:flex; align-items:center; gap:10px; }
-.brand-logos img{ height:32px; width:auto; display:block; object-fit:contain; }
-.brand-divider{ width:1px; height:22px; background:var(--border); }
-.last-update{ font-size:11px; color:var(--muted); letter-spacing:.4px; font-weight:500; }
-
-.announcement-bar{
-  background:var(--card);
-  border:1px solid var(--orange-soft-border);
-  color:var(--orange);
-  padding:10px 16px;
-  font-size:12px;
-  font-weight:700;
-  margin-bottom:20px;
-  display:none;
+  position: sticky; top: 0; z-index: 50;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap;
+  padding: 16px 20px;
+  background: rgba(7, 8, 10, 0.85);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 30px;
+  border-radius: 0 0 16px 16px;
 }
 
-.controls{ display:flex; justify-content:flex-end; margin-bottom:22px; }
-.search-wrap{ position:relative; width:100%; max-width:340px; }
-.search-wrap svg{ position:absolute; left:13px; top:50%; transform:translateY(-50%); opacity:.5; pointer-events:none; }
+.brand{ display: flex; align-items: center; gap: 14px; }
+.brand-logos{ display: flex; align-items: center; gap: 12px; }
+.brand-logos img{ height: 32px; width: auto; display: block; object-fit: contain; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5)); }
+.brand-divider{ width: 1px; height: 22px; background: var(--border); }
+
+.header-status {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(255, 90, 31, 0.08);
+  border: 1px solid rgba(255, 90, 31, 0.2);
+  padding: 6px 12px; border-radius: 20px;
+  font-size: 11px; font-weight: 700; color: var(--orange); letter-spacing: 0.5px;
+}
+.header-pulse { width: 7px; height: 7px; background: var(--orange); border-radius: 50%; box-shadow: 0 0 10px var(--orange); animation: pulse 1.6s infinite; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}
+
+.controls{ display: flex; justify-content: flex-end; margin-bottom: 26px; }
+.search-wrap{ position: relative; width: 100%; max-width: 360px; }
+.search-wrap svg{ position: absolute; left: 14px; top: 50%; transform: translateY(-50%); opacity: .4; pointer-events: none; transition: opacity 0.2s; }
 .search-wrap input{
-  width:100%; background:var(--card); border:1px solid var(--border);
-  color:var(--text); font-size:13px; font-weight:500;
-  padding:11px 14px 11px 38px; outline:none; transition:border-color .2s ease;
+  width: 100%; background: var(--card); border: 1px solid var(--border);
+  color: var(--text); font-size: 13px; font-weight: 600;
+  padding: 12px 38px 12px 42px; outline: none; border-radius: 10px;
+  transition: all 0.25s ease;
 }
-.search-wrap input:focus{ border-color:var(--orange); }
+.search-wrap input:focus{
+  border-color: var(--orange);
+  box-shadow: 0 0 20px var(--orange-glow);
+  background: #141720;
+}
+.search-wrap input:focus + svg { opacity: 1; color: var(--orange); }
+.search-clear {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  color: var(--muted); cursor: pointer; font-size: 14px; display: none;
+}
+.search-clear:hover { color: var(--text); }
 
-.grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:20px; }
+.grid{ display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 22px; }
 
 .loading-state, .empty-state{
-  grid-column:1/-1; text-align:center; padding:60px 20px;
-  color:var(--muted); font-size:13.5px; border:1px dashed var(--border);
+  grid-column: 1/-1; text-align: center; padding: 70px 20px;
+  color: var(--muted); font-size: 14px; border: 1px dashed var(--border);
+  border-radius: 16px; background: var(--card);
 }
 
+/* Cool Cards with Micro-Animations */
 .card{
-  background:var(--card); border:1px solid var(--border);
-  overflow:hidden; transition:border-color .2s ease;
-  display:flex; flex-direction:column;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex; flex-direction: column;
+  position: relative;
 }
-.card:hover{ border-color:var(--orange-soft-border); }
+.card:hover{
+  border-color: var(--border-hover);
+  transform: translateY(-6px);
+  box-shadow: 0 12px 30px -10px var(--orange-glow);
+  background: var(--card-hover);
+}
 
 .thumb-wrap{
-  position:relative; width:100%; height:180px; background:#000;
-  display:flex; align-items:center; justify-content:center; overflow:hidden;
+  position: relative; width: 100%; height: 185px; background: #000;
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
 }
-.thumb-wrap img{ width:100%; height:100%; object-fit:contain; display:block; }
+.thumb-wrap img{
+  width: 100%; height: 100%; object-fit: contain; display: block;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.card:hover .thumb-wrap img{ transform: scale(1.06); }
 
 .lang-badge{
-  position:absolute; top:10px; left:10px;
-  display:flex; align-items:center; gap:5px;
-  background:rgba(0,0,0,.75); border:1px solid var(--orange);
-  color:var(--orange); font-size:10px; font-weight:700; padding:5px 9px;
+  position: absolute; top: 12px; left: 12px; z-index: 2;
+  display: flex; align-items: center; gap: 5px;
+  background: rgba(7, 8, 10, 0.85);
+  border: 1px solid rgba(255, 90, 31, 0.5);
+  color: var(--orange); font-size: 10px; font-weight: 800;
+  padding: 4px 10px; border-radius: 6px;
+  backdrop-filter: blur(8px);
 }
 
 .status-badge{
-  position:absolute; top:10px; right:10px;
-  display:flex; align-items:center; gap:5px;
-  background:rgba(0,0,0,.6); font-size:9.5px; font-weight:700;
-  padding:4px 9px; color:var(--orange); border:1px solid var(--orange-soft-border);
+  position: absolute; top: 12px; right: 12px; z-index: 2;
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(7, 8, 10, 0.85); font-size: 10px; font-weight: 800;
+  padding: 4px 10px; color: var(--orange);
+  border: 1px solid var(--orange-soft-border);
+  border-radius: 6px; backdrop-filter: blur(8px);
 }
-.status-dot-mini{ width:5px; height:5px; border-radius:50%; background:currentColor; animation:miniPulse 1.8s infinite; }
-@keyframes miniPulse{ 0%,100%{ opacity:1; } 50%{ opacity:.4; } }
 
-.meta{ padding:16px 18px 18px; display:flex; flex-direction:column; gap:9px; flex:1; text-align:center; }
-.teams{ font-size:16px; font-weight:800; letter-spacing:.2px; text-transform:uppercase; line-height:1.28; }
-.event{ font-size:12px; color:var(--muted); font-weight:500; }
+.meta{ padding: 18px; display: flex; flex-direction: column; gap: 8px; flex: 1; text-align: center; }
+.teams{ font-size: 15px; font-weight: 800; letter-spacing: 0.3px; text-transform: uppercase; line-height: 1.3; color: #fff; }
+.event{ font-size: 12px; color: var(--muted); font-weight: 500; }
 
-.actions{ margin-top:auto; display:flex; flex-direction:column; gap:8px; padding-top:4px; }
+.actions{ margin-top: auto; display: flex; flex-direction: column; gap: 8px; padding-top: 6px; }
+
 .btn{
-  appearance:none; border:none; cursor:pointer; width:100%;
-  font-weight:800; font-size:13px; letter-spacing:.5px; padding:12px 14px;
-  display:flex; align-items:center; justify-content:center; gap:8px; transition:background .2s ease;
+  appearance: none; border: none; cursor: pointer; width: 100%;
+  font-weight: 800; font-size: 13px; letter-spacing: 0.6px; padding: 12px 14px;
+  border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  gap: 8px; transition: all 0.25s ease;
 }
-.btn-watch-now{ background:var(--orange); color:#fff; text-decoration:none; }
-.btn-watch-now:hover{ background:var(--orange-deep); }
+.btn-watch-now{
+  background: linear-gradient(135deg, var(--orange) 0%, var(--orange-deep) 100%);
+  color: #fff;
+  box-shadow: 0 4px 15px var(--orange-glow);
+}
+.btn-watch-now:hover{
+  filter: brightness(1.15);
+  box-shadow: 0 6px 20px rgba(255, 90, 31, 0.45);
+  transform: translateY(-1px);
+}
 
-.btn-ww{ background:transparent; color:var(--text); border:1px solid var(--border); }
-.btn-ww:hover, .btn-ww.open{ border-color:var(--orange); color:var(--orange); }
-.btn-ww .chev{ margin-left:auto; transition:transform .3s ease; }
-.btn-ww.open .chev{ transform:rotate(180deg); }
+.btn-ww{
+  background: transparent; color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn-ww:hover, .btn-ww.open{ border-color: var(--orange); color: var(--orange); background: var(--orange-soft); }
+.btn-ww .chev{ margin-left: auto; transition: transform 0.3s ease; }
+.btn-ww.open .chev{ transform: rotate(180deg); }
 
-.ww-panel-wrap{ display:grid; grid-template-rows:0fr; opacity:0; transition:grid-template-rows .38s ease, opacity .3s ease; }
-.ww-panel-wrap.open{ grid-template-rows:1fr; opacity:1; margin-top:1px; }
-.ww-panel-inner{ overflow:hidden; display:flex; flex-direction:column; gap:6px; }
+.ww-panel-wrap{ display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows 0.35s ease, opacity 0.25s ease; }
+.ww-panel-wrap.open{ grid-template-rows: 1fr; opacity: 1; margin-top: 4px; }
+.ww-panel-inner{ overflow: hidden; display: flex; flex-direction: column; gap: 6px; }
 .ww-row{
-  display:flex; align-items:center; gap:10px; padding:10px 12px;
-  background:var(--card-2); border:1px solid var(--border); cursor:pointer; text-decoration:none; color:inherit;
+  display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+  background: var(--card-2); border: 1px solid var(--border); border-radius: 8px;
+  cursor: pointer; text-decoration: none; color: inherit; transition: all 0.2s ease;
 }
-.ww-row:hover{ background:var(--orange-soft); border-color:var(--orange-soft-border); color:var(--orange); }
+.ww-row:hover{ background: var(--orange-soft); border-color: var(--orange-soft-border); color: var(--orange); }
 
-footer{ margin-top:50px; padding-top:26px; border-top:1px solid var(--border); text-align:center; color:var(--muted); font-size:11px; font-weight:700; }
+footer{
+  margin-top: 60px; padding-top: 24px; border-top: 1px solid var(--border);
+  text-align: center; color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+}
 </style>
 </head>
 
@@ -148,7 +207,7 @@ footer{ margin-top:50px; padding-top:26px; border-top:1px solid var(--border); t
 
 <div class="app">
 
-  <!-- HEADER WITH TITU & EV LOGOS -->
+  <!-- HEADER -->
   <header>
     <div class="brand">
       <div class="brand-logos">
@@ -159,22 +218,25 @@ footer{ margin-top:50px; padding-top:26px; border-top:1px solid var(--border); t
         <img id="fancodeLogoImg" src="" alt="FanCode Logo">
       </div>
     </div>
-    <div class="last-update" id="lastUpdate">LAST UPDATE: LOADING...</div>
+
+    <div class="header-status">
+      <span class="header-pulse"></span>
+      <span id="lastUpdate">LIVE FEED</span>
+    </div>
   </header>
 
-  <div id="announcementBar" class="announcement-bar">
-    📢 <span id="announcementText"></span>
-  </div>
-
+  <!-- SEARCH CONTROL -->
   <div class="controls">
     <div class="search-wrap">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-      <input type="text" id="searchInput" onkeyup="filterMatches()" placeholder="SEARCH TEAM OR EVENT...">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input type="text" id="searchInput" oninput="handleSearch()" placeholder="SEARCH TEAM OR EVENT...">
+      <span id="searchClear" class="search-clear" onclick="clearSearch()">✕</span>
     </div>
   </div>
 
+  <!-- MATCHES GRID -->
   <div id="matchesGrid" class="grid">
-    <div class="loading-state">LOADING LIVE MATCHES...</div>
+    <div class="loading-state">FETCHING LIVE MATCHES...</div>
   </div>
 
   <footer>
@@ -183,14 +245,14 @@ footer{ margin-top:50px; padding-top:26px; border-top:1px solid var(--border); t
 
 </div>
 
-<!-- Load Config First -->
+<!-- Config Reference -->
 <script src="config.js"></script>
 
 <script>
 let globalMatches = [];
 
 document.addEventListener("DOMContentLoaded", () => {
-  // Set Logos from config.js
+  // Set Logo Sources from config.js
   document.getElementById("tituLogoImg").src = CONFIG.TITU_LOGO;
   document.getElementById("evLogoImg").src = CONFIG.EV_LOGO;
   document.getElementById("fancodeLogoImg").src = CONFIG.FANCODE_LOGO;
@@ -202,31 +264,26 @@ async function fetchMatches() {
   const grid = document.getElementById("matchesGrid");
   try {
     const res = await fetch(CONFIG.JSON_URL, { cache: "no-store" });
-    if (!res.ok) throw new Error("JSON Fetch Failed");
+    if (!res.ok) throw new Error("Fetch Failed");
     
     const data = await res.json();
     globalMatches = data.Matches || [];
 
     if (data.last_updated) {
-      document.getElementById("lastUpdate").textContent = "LAST UPDATE: " + data.last_updated.toUpperCase();
-    }
-
-    if (data.announcement) {
-      document.getElementById("announcementText").textContent = data.announcement;
-      document.getElementById("announcementBar").style.display = "flex";
+      document.getElementById("lastUpdate").textContent = "UPDATED: " + data.last_updated.toUpperCase();
     }
 
     renderGrid(globalMatches);
   } catch (err) {
     console.error(err);
-    grid.innerHTML = `<div class="empty-state">COULD NOT LOAD STREAMS. CHECK CONFIG.JS JSON URL.</div>`;
+    grid.innerHTML = `<div class="empty-state">COULD NOT LOAD STREAMS. PLEASE CHECK CONFIG.JS URL.</div>`;
   }
 }
 
 function renderGrid(matches) {
   const grid = document.getElementById("matchesGrid");
   if (!matches || matches.length === 0) {
-    grid.innerHTML = `<div class="empty-state">NO MATCHES CURRENTLY AVAILABLE</div>`;
+    grid.innerHTML = `<div class="empty-state">NO LIVE MATCHES AVAILABLE RIGHT NOW</div>`;
     return;
   }
 
@@ -236,10 +293,9 @@ function renderGrid(matches) {
     const img = m.image || CONFIG.FALLBACK_IMG;
     const cnp = m.CnpTV || {};
     
-    // Check Multi-Server availability
     const hasMultiple = cnp.cloudfront_server || cnp.akamai_server;
 
-    // Secure payload encoding (Hides raw MPD URLs from plain HTML source)
+    // Secure payload encoding (SessionStorage payload)
     const payload = btoa(unescape(encodeURIComponent(JSON.stringify({
       id: id,
       name: name,
@@ -253,14 +309,13 @@ function renderGrid(matches) {
         <div class="thumb-wrap">
           <img src="${img}" alt="${name}" loading="lazy" onerror="this.src='${CONFIG.FALLBACK_IMG}'">
           <span class="lang-badge">ENGLISH</span>
-          <span class="status-badge"><span class="status-dot-mini"></span>LIVE</span>
+          <span class="status-badge"><span class="header-pulse"></span>LIVE</span>
         </div>
         <div class="meta">
           <div class="teams">${name}</div>
           <div class="event">LIVE SPORTS EVENT</div>
 
           <div class="actions">
-            <!-- Secure Link to play.html -->
             <button onclick="launchPlayer('${payload}', 'amazon_server')" class="btn btn-watch-now">
               WATCH NOW
             </button>
@@ -272,7 +327,7 @@ function renderGrid(matches) {
               </button>
               <div class="ww-panel-wrap" id="ww-${id}">
                 <div class="ww-panel-inner">
-                  ${cnp.amazon_server ? `<div onclick="launchPlayer('${payload}', 'amazon_server')" class="ww-row"><span>🇺🇸</span><span style="flex:1;">Amazon Server (Main)</span></div>` : ''}
+                  ${cnp.amazon_server ? `<div onclick="launchPlayer('${payload}', 'amazon_server')" class="ww-row"><span>🇺🇸</span><span style="flex:1;">Amazon Server (Primary)</span></div>` : ''}
                   ${cnp.cloudfront_server ? `<div onclick="launchPlayer('${payload}', 'cloudfront_server')" class="ww-row"><span>⚡</span><span style="flex:1;">Cloudfront (Backup 1)</span></div>` : ''}
                   ${cnp.akamai_server ? `<div onclick="launchPlayer('${payload}', 'akamai_server')" class="ww-row"><span>🛡️</span><span style="flex:1;">Akamai (Backup 2)</span></div>` : ''}
                 </div>
@@ -285,7 +340,6 @@ function renderGrid(matches) {
   }).join('');
 }
 
-// Store data safely in Session Storage to prevent URL tampering/scraping
 function launchPlayer(payload, serverType) {
   sessionStorage.setItem("__EV_TITU_STREAM__", payload);
   sessionStorage.setItem("__EV_TITU_SERVER__", serverType);
@@ -300,8 +354,11 @@ function toggleAccordion(panelId, btn) {
   }
 }
 
-function filterMatches() {
+function handleSearch() {
   const input = document.getElementById("searchInput").value.toUpperCase();
+  const clearBtn = document.getElementById("searchClear");
+  clearBtn.style.display = input.length > 0 ? "block" : "none";
+
   const cards = document.getElementsByClassName("card-item");
   for (let i = 0; i < cards.length; i++) {
     const title = cards[i].querySelector(".teams").innerText;
@@ -309,10 +366,15 @@ function filterMatches() {
   }
 }
 
-// Anti-Extractable Security Script
+function clearSearch() {
+  document.getElementById("searchInput").value = "";
+  handleSearch();
+}
+
+// Anti-Extract Security
 document.addEventListener('contextmenu', e => e.preventDefault());
 document.onkeydown = function(e) {
-  if (e.keyCode == 123) return false; // F12
+  if (e.keyCode == 123) return false;
   if (e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) return false;
   if (e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) return false;
   if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false;
