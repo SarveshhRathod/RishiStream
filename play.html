@@ -4,19 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
   <meta name="theme-color" content="#000000">
-  <title>EV SPORTS — Fast Buffer Stream Player</title>
+  <title>EV SPORTS — Universal Stream Player</title>
 
   <!-- Fonts & Icons -->
   <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Optimized Shaka Player CDN -->
+  <!-- Universal Shaka Player CDN (Supports DASH .mpd + HLS .m3u8 + ClearKey DRM) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.compiled.js"></script>
-  <!-- JW Player Backup -->
-  <script src="https://cdn.jwplayer.com/libraries/SAHhwvZq.js"></script>
-  <!-- HLS Backup -->
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
 
   <style>
     :root { --ev-orange: #FF7A1A; }
@@ -46,7 +42,7 @@
     .top-btn {
       background: rgba(18, 18, 22, 0.75); backdrop-filter: blur(16px);
       border: 1px solid rgba(255, 255, 255, 0.15); color: #fff;
-      padding: 6px 12px; border-radius: 20px; font-size: 11.5px; font-weight: 700;
+      padding: 6px 14px; border-radius: 20px; font-size: 11.5px; font-weight: 700;
       display: flex; align-items: center; gap: 4px; cursor: pointer; transition: all 0.2s;
     }
     .top-btn:hover { background: rgba(255, 122, 26, 0.25); border-color: var(--ev-orange); color: var(--ev-orange); }
@@ -102,7 +98,7 @@
     .loading-label { font-size: 15.5px; font-weight: 700; color: rgba(255,255,255,.88); }
     .loading-sub { font-size: 12px; color: rgba(255,255,255,.32); }
 
-    /* MAIN SHELL */
+    /* MAIN PLAYER SHELL */
     #player-shell {
       position: fixed; inset: 0; width: 100vw; height: 100vh;
       background: #000; z-index: 1; overflow: hidden;
@@ -185,8 +181,6 @@
     .error-badge { display: inline-block; background: rgba(245,165,0,.15); border: 1px solid rgba(245,165,0,.3); color: #f5a500; font-size: 12px; font-weight: 700; padding: 3px 12px; border-radius: 20px; margin-bottom: 12px; }
     .error-body { font-size: 13px; color: rgba(255,255,255,.45); line-height: 1.6; margin-bottom: 20px; }
     .btn-retry { background: var(--ev-orange); color: #fff; font-weight: 800; padding: 10px 20px; border-radius: 20px; border: none; cursor: pointer; width: 100%; }
-
-    #jw-player-container, #fc-player-container { position: fixed; inset: 0; z-index: 50; display: none; background: #000; }
   </style>
 </head>
 <body>
@@ -214,20 +208,6 @@
         <div class="pop-menu-item" onclick="switchServer('akamai_server')">🛡️ Server 3 (Akamai)</div>
       </div>
     </div>
-
-    <!-- Engine Selector -->
-    <div class="relative">
-      <button id="btnEngine" class="top-btn" style="border-color: rgba(255,122,26,0.4); color: var(--ev-orange);">
-        <span id="lblEngine">⚡ Ultra Fast Engine</span>
-        <span class="material-icons-round text-sm">expand_more</span>
-      </button>
-      <div class="pop-menu" id="menuEngine">
-        <div class="pop-menu-title">Select Engine</div>
-        <div class="pop-menu-item active" onclick="switchEngine('shaka')">⚡ Engine 1: Fast Shaka (1s Buffer)</div>
-        <div class="pop-menu-item" onclick="switchEngine('jw')">🍿 Engine 2: JW Player</div>
-        <div class="pop-menu-item" onclick="switchEngine('fc')">🔥 Engine 3: FC HLS Engine</div>
-      </div>
-    </div>
   </div>
 </div>
 
@@ -239,8 +219,8 @@
     <div class="loader-core"></div>
   </div>
   <div class="loading-text">
-    <div class="loading-label" id="loaderLabel">Starting Playback</div>
-    <div class="loading-sub">Connecting Fast Stream (1s Buffer)...</div>
+    <div class="loading-label" id="loaderLabel">Starting Stream</div>
+    <div class="loading-sub">Auto-Detecting Stream Format...</div>
   </div>
 </div>
 
@@ -287,20 +267,12 @@
   </div>
 </div>
 
-<!-- BACKUP ENGINE LAYERS -->
-<div id="jw-player-container"></div>
-<div id="fc-player-container">
-  <video id="fcVideo" class="w-full h-full object-contain" autoplay muted playsinline></video>
-</div>
-
 <script src="config.js"></script>
 
 <script>
 let currentPayload = null;
 let activeServer = "amazon_server";
-let activeEngine = "shaka";
 let shakaPlayer = null;
-let fcHls = null;
 let video = null;
 let controlsTimer = null;
 let resizeModes = ['fit', 'fill', 'normal'];
@@ -326,11 +298,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  initShakaMainEngine();
+  initUniversalPlayer();
   setupFCControls();
 });
 
-function showLoader(msg = "Starting Playback") {
+function showLoader(msg = "Starting Stream") {
   document.getElementById("loaderLabel").textContent = msg;
   document.getElementById("loading-screen").style.display = "flex";
   document.getElementById("error-screen").classList.remove("show");
@@ -360,12 +332,12 @@ function parseDRM(drmStr) {
   return obj;
 }
 
-// 1. FAST BUFFER SHAKA PLAYER ENGINE
-async function initShakaMainEngine() {
+// SINGLE MASTER UNIVERSAL PLAYER (AUTO-DETECTS .MPD / .M3U8 / DASH / HLS)
+async function initUniversalPlayer() {
   shaka.polyfill.installAll();
   if (!shaka.Player.isBrowserSupported()) return;
 
-  showLoader("Connecting Fast Stream...");
+  showLoader("Detecting Stream Format...");
 
   if (shakaPlayer) {
     try { await shakaPlayer.destroy(); } catch(e) {}
@@ -374,17 +346,17 @@ async function initShakaMainEngine() {
 
   shakaPlayer = new shaka.Player(video);
 
-  // Request Headers for Amazon CDN
+  // Request Headers Filter for Amazon/Cloudfront CDN
   shakaPlayer.getNetworkingEngine().registerRequestFilter((type, request) => {
     request.headers['Referer'] = 'https://watch.tataplay.com/';
   });
 
-  // ULTRA FAST 1s REBUFFERING & 4s BUFFERING GOAL CONFIG
+  // ZERO-BUFFERING & LOW LATENCY CONFIGURATION
   shakaPlayer.configure({
     streaming: {
-      rebufferingGoal: 1,         // Initial playback starts immediately after 1s buffer
-      bufferingGoal: 4,           // Forward buffer limit set to 4s for zero-lag live playback
-      bufferBehind: 20,           // Free RAM behind to prevent mobile freeze
+      rebufferingGoal: 1,         // Immediate 1s startup
+      bufferingGoal: 4,           // Low-latency 4s buffer limit
+      bufferBehind: 20,           // Free RAM behind to prevent freeze
       jumpLargeGaps: true,        // Auto skip missing CDN gaps without freezing
       stallEnabled: true,         // Enable stall detector
       stallThreshold: 1.0,        // Detect stall after 1s
@@ -399,11 +371,11 @@ async function initShakaMainEngine() {
     },
     abr: {
       enabled: true,
-      defaultBandwidthEstimate: 1500000,
-      switchInterval: 5
+      defaultBandwidthEstimate: 1500000
     }
   });
 
+  // ClearKey DRM Setup
   const parsedDrm = parseDRM(currentPayload.drm);
   if (parsedDrm) {
     shakaPlayer.configure({ drm: { clearKeys: parsedDrm } });
@@ -413,15 +385,24 @@ async function initShakaMainEngine() {
     const streamUrl = getStreamUrl();
     if (!streamUrl) throw new Error("Empty Stream URL");
 
-    await shakaPlayer.load(streamUrl);
+    // Auto-detect Manifest MIME Type based on URL extension
+    let mimeType = null;
+    if (streamUrl.includes('.m3u8')) {
+      mimeType = 'application/x-mpegurl';
+    } else if (streamUrl.includes('.mpd')) {
+      mimeType = 'application/dash+xml';
+    }
+
+    // Load Stream (Handles both DASH & HLS automatically)
+    await shakaPlayer.load(streamUrl, null, mimeType);
     hideLoader();
 
     video.play().catch(() => {});
     buildQualityMenu();
   } catch (err) {
-    console.error("Shaka error:", err);
+    console.error("Playback Error:", err);
     
-    // Auto-fallback if server 1 fails
+    // Auto-fallback server if stream fails
     if (activeServer === "amazon_server" && currentPayload.servers?.cloudfront_server) {
       switchServer("cloudfront_server");
     } else if (activeServer !== "akamai_server" && currentPayload.servers?.akamai_server) {
@@ -446,86 +427,11 @@ function switchServer(serverKey) {
   const lblMap = { amazon_server: "🌐 Server 1", cloudfront_server: "⚡ Server 2", akamai_server: "🛡️ Server 3" };
   document.getElementById("lblServer").textContent = lblMap[serverKey] || "Server 1";
 
-  if (activeEngine === 'shaka') initShakaMainEngine();
-  else if (activeEngine === 'jw') initJWEngine();
-  else if (activeEngine === 'fc') initFCEngine();
-
+  initUniversalPlayer();
   document.getElementById("menuServer").classList.remove("show");
 }
 
-// ENGINE SWITCHING
-function switchEngine(engineType) {
-  activeEngine = engineType;
-  const jwWrap = document.getElementById("jw-player-container");
-  const fcWrap = document.getElementById("fc-player-container");
-  const shell = document.getElementById("player-shell");
-  const lblEngine = document.getElementById("lblEngine");
-
-  jwWrap.style.display = "none";
-  fcWrap.style.display = "none";
-  shell.style.display = "block";
-
-  if (engineType === 'shaka') {
-    lblEngine.textContent = "⚡ Fast Engine";
-    initShakaMainEngine();
-  } else if (engineType === 'jw') {
-    lblEngine.textContent = "🍿 JW Player";
-    shell.style.display = "none";
-    jwWrap.style.display = "block";
-    initJWEngine();
-  } else if (engineType === 'fc') {
-    lblEngine.textContent = "🔥 FC Player";
-    shell.style.display = "none";
-    fcWrap.style.display = "block";
-    initFCEngine();
-  }
-
-  document.getElementById("menuEngine").classList.remove("show");
-}
-
-function initJWEngine() {
-  showLoader("Loading JW Engine...");
-  jwplayer.key = CONFIG.JW_KEY;
-  const parsedDrm = parseDRM(currentPayload.drm);
-  let jwDrmObj = {};
-  if (parsedDrm) {
-    const keyId = Object.keys(parsedDrm)[0];
-    jwDrmObj = { clearkey: { keyId: keyId, key: parsedDrm[keyId] } };
-  }
-
-  jwplayer("jw-player-container").setup({
-    file: getStreamUrl(),
-    drm: jwDrmObj,
-    width: "100%", height: "100%",
-    autostart: true, stretching: "uniform"
-  });
-  hideLoader();
-}
-
-function initFCEngine() {
-  showLoader("Loading FC Engine...");
-  const fcVid = document.getElementById("fcVideo");
-  const streamUrl = getStreamUrl();
-
-  if (Hls.isSupported()) {
-    if (fcHls) fcHls.destroy();
-    fcHls = new Hls({ enableWorker: true });
-    fcHls.loadSource(streamUrl);
-    fcHls.attachMedia(fcVid);
-    fcHls.on(Hls.Events.MANIFEST_PARSED, () => {
-      hideLoader();
-      fcVid.play().catch(() => {});
-    });
-  } else if (fcVid.canPlayType('application/vnd.apple.mpegurl')) {
-    fcVid.src = streamUrl;
-    hideLoader();
-    fcVid.play().catch(() => {});
-  } else {
-    hideLoader();
-  }
-}
-
-// SETUP FC UI CONTROLS
+// SETUP CONTROLS & EVENTS
 function setupFCControls() {
   const shell = document.getElementById("player-shell");
   const centerOverlay = document.getElementById("center-overlay");
@@ -602,14 +508,8 @@ function setupFCControls() {
     document.getElementById("menuServer").classList.toggle("show");
   };
 
-  document.getElementById("btnEngine").onclick = (e) => {
-    e.stopPropagation();
-    document.getElementById("menuEngine").classList.toggle("show");
-  };
-
   document.addEventListener("click", () => {
     document.getElementById("menuServer").classList.remove("show");
-    document.getElementById("menuEngine").classList.remove("show");
     document.getElementById("qualityMenu").classList.remove("open");
   });
 
@@ -651,7 +551,7 @@ function buildQualityMenu() {
 
 function retryCurrentStream() {
   document.getElementById("error-screen").classList.remove("show");
-  initShakaMainEngine();
+  initUniversalPlayer();
 }
 
 // SECURITY TRAPS
