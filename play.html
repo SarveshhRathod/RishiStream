@@ -1,345 +1,361 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-  <title>TITU EV | Multi-Engine Stream Player</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#000000">
+<meta name="color-scheme" content="dark">
+<title>EV SPORTS — Live Stream Player</title>
 
-  <!-- Google Fonts & Icons -->
-  <link rel="preconnect" href="https://api.fontshare.com">
-  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
+<!-- Fonts & CDNs -->
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Player CDNs -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.compiled.js"></script>
-  <script src="https://cdn.jwplayer.com/libraries/SAHhwvZq.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
+<!-- Player Engines -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.compiled.js"></script>
+<script src="https://cdn.jwplayer.com/libraries/SAHhwvZq.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
 
-  <style>
-    :root {
-      --orange: #ff5a1f;
-      --orange-glow: rgba(255, 90, 31, 0.4);
-      --glass-bg: rgba(12, 14, 18, 0.88);
-      --glass-border: rgba(255, 255, 255, 0.12);
-    }
+<style>
+:root { --ev-orange: #FF7A1A; }
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 
-    * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
-    html, body {
-      width: 100%; height: 100%; margin: 0; padding: 0;
-      background-color: #050507; color: #fff;
-      font-family: 'Satoshi', sans-serif; overflow: hidden;
-    }
+html, body {
+  width: 100%; height: 100%;
+  min-height: 100vh; min-height: 100dvh;
+  background: #000; overflow: hidden;
+  font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  user-select: none; -webkit-user-select: none;
+}
 
-    .ambient-glow {
-      position: absolute; inset: 0;
-      background: radial-gradient(circle at center, rgba(255,90,31,0.12) 0%, rgba(5,5,7,1) 80%);
-      pointer-events: none; z-index: 1;
-    }
+/* TOP HEADER & LOGO */
+.top-header-bar {
+  position: fixed; top: 12px; left: 12px; right: 12px;
+  z-index: 50; display: flex; align-items: center; justify-content: space-between;
+  pointer-events: none;
+}
+.brand-left { display: flex; align-items: center; gap: 10px; pointer-events: auto; }
+.logo-btn { display: flex; align-items: center; text-decoration: none; }
+.logo-btn img {
+  height: 34px; width: auto; border-radius: 7px; object-fit: contain;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,.8));
+}
 
-    .ott-player-container {
-      position: relative; width: 100vw; height: 100vh;
-      background: #000; overflow: hidden; display: flex;
-      align-items: center; justify-content: center;
-    }
+.top-actions { display: flex; align-items: center; gap: 8px; pointer-events: auto; }
+.top-btn {
+  background: rgba(18, 18, 22, 0.75); backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.15); color: #fff;
+  padding: 6px 12px; border-radius: 20px; font-size: 11.5px; font-weight: 700;
+  display: flex; align-items: center; gap: 4px; cursor: pointer; transition: all 0.2s;
+}
+.top-btn:hover { background: rgba(255, 122, 26, 0.25); border-color: var(--ev-orange); color: var(--ev-orange); }
 
-    video {
-      width: 100%; height: 100%; object-fit: contain; position: relative; z-index: 2;
-    }
+/* POPUP MENUS */
+.pop-menu {
+  position: absolute; top: 45px; right: 0; z-index: 60;
+  background: rgba(18, 18, 22, 0.92); backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 14px;
+  padding: 8px; min-width: 200px; display: none; flex-direction: column; gap: 2px;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.8);
+}
+.pop-menu.show { display: flex; animation: menuPop 0.2s ease; }
+@keyframes menuPop { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
 
-    .ott-overlay {
-      position: absolute; inset: 0; z-index: 20;
-      display: flex; flex-direction: column; justify-content: space-between;
-      background: linear-gradient(180deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 30%, rgba(0,0,0,0) 70%, rgba(0,0,0,0.92) 100%);
-      opacity: 1; transition: opacity 0.35s ease;
-      pointer-events: auto;
-    }
+.pop-menu-title { font-size: 10px; font-weight: 800; color: rgba(255,255,255,0.4); text-transform: uppercase; padding: 6px 10px 4px; }
+.pop-menu-item {
+  padding: 8px 12px; font-size: 12px; font-weight: 700; border-radius: 8px;
+  color: rgba(255,255,255,0.8); cursor: pointer; display: flex; align-items: center; justify-content: space-between;
+}
+.pop-menu-item:hover, .pop-menu-item.active { background: var(--ev-orange); color: #fff; }
 
-    .ott-overlay.hide-controls { opacity: 0; pointer-events: none; cursor: none; }
+/* DUAL RING LOADER */
+#loading-screen {
+  position: fixed; inset: 0; z-index: 100;
+  background: #0a0a0a; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 22px;
+}
+.loader { position: relative; width: 58px; height: 58px; }
+.loader-ring {
+  position: absolute; inset: 0; border-radius: 50%;
+  border: 3px solid transparent; border-top-color: var(--ev-orange);
+  border-right-color: rgba(255,122,26,0.18);
+  animation: loader-spin 1s cubic-bezier(0.55,0.1,0.45,0.9) infinite;
+}
+.loader-ring-inner {
+  position: absolute; inset: 11px; border-radius: 50%;
+  border: 3px solid transparent; border-top-color: #ffb020;
+  border-right-color: rgba(255,176,32,0.16);
+  animation: loader-spin-rev .8s cubic-bezier(0.55,0.1,0.45,0.9) infinite;
+}
+.loader-core {
+  position: absolute; inset: 22px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,122,26,0.55) 0%, rgba(255,122,26,0) 72%);
+  animation: loader-pulse 1.6s ease-in-out infinite;
+}
+@keyframes loader-spin { to { transform: rotate(360deg); } }
+@keyframes loader-spin-rev { to { transform: rotate(-360deg); } }
+@keyframes loader-pulse { 0%, 100% { opacity: .35; transform: scale(.82); } 50% { opacity: 1; transform: scale(1); } }
 
-    .center-controls {
-      position: absolute; top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      display: flex; align-items: center; gap: 32px;
-      z-index: 25; pointer-events: auto;
-    }
+.loading-text { display: flex; flex-direction: column; align-items: center; gap: 7px; }
+.loading-label { font-size: 15.5px; font-weight: 700; color: rgba(255,255,255,.88); }
+.loading-sub { font-size: 12px; color: rgba(255,255,255,.32); }
 
-    .btn-circle-action {
-      width: 60px; height: 60px; border-radius: 50%;
-      background: rgba(20, 24, 32, 0.6); backdrop-filter: blur(12px);
-      border: 1px solid var(--glass-border); color: #fff;
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer; transition: all 0.2s ease;
-    }
-    .btn-circle-action:hover {
-      background: var(--orange); border-color: var(--orange);
-      transform: scale(1.12); box-shadow: 0 0 25px var(--orange-glow);
-    }
+/* MAIN SHELL */
+#player-shell {
+  position: fixed; inset: 0; width: 100vw; height: 100vh;
+  background: #000; z-index: 1; overflow: hidden;
+}
 
-    .btn-play-main {
-      width: 76px; height: 76px;
-      background: linear-gradient(135deg, #ff5a1f, #e0440b);
-      border: none; box-shadow: 0 0 30px var(--orange-glow);
-    }
+#video { width: 100%; height: 100%; object-fit: contain; background: #000; display: block; }
 
-    .seekbar-wrap {
-      position: relative; width: 100%; height: 6px;
-      background: rgba(255,255,255,0.2); cursor: pointer;
-      border-radius: 4px; transition: height 0.15s ease;
-    }
-    .seekbar-wrap:hover { height: 10px; }
+/* CENTER PLAY OVERLAY */
+#center-overlay {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  z-index: 3; opacity: 0; pointer-events: none; transition: opacity .25s ease;
+}
+#center-overlay.show { opacity: 1; pointer-events: auto; }
+.center-play-btn {
+  width: 64px; height: 64px; border-radius: 50%; border: none;
+  background: rgba(18,18,22,.65); backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.2); color: #fff; display: flex;
+  align-items: center; justify-content: center; cursor: pointer;
+  box-shadow: 0 0 25px rgba(255,122,26,.3); transition: transform .2s ease;
+}
+.center-play-btn:hover { transform: scale(1.1); background: var(--ev-orange); }
 
-    .seekbar-fill {
-      height: 100%; background: var(--orange);
-      border-radius: 4px; width: 0%; position: relative;
-      box-shadow: 0 0 10px var(--orange);
-    }
-    .seekbar-handle {
-      position: absolute; right: -6px; top: 50%; transform: translateY(-50%) scale(0);
-      width: 14px; height: 14px; background: #fff; border-radius: 50%;
-      box-shadow: 0 0 10px var(--orange); transition: transform 0.15s ease;
-    }
-    .seekbar-wrap:hover .seekbar-handle { transform: translateY(-50%) scale(1); }
+/* CONTROLS BAR */
+#controls-bar {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 10;
+  padding: 22px 16px 14px;
+  background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,.85) 60%, rgba(0,0,0,.95) 100%);
+  opacity: 0; transform: translateY(12px);
+  transition: opacity .28s ease, transform .28s ease; pointer-events: none;
+}
+#player-shell.controls-visible #controls-bar { opacity: 1; transform: translateY(0); pointer-events: auto; }
 
-    .ott-menu-popup {
-      position: absolute; bottom: 75px; right: 20px; z-index: 40;
-      background: var(--glass-bg); backdrop-filter: blur(20px);
-      border: 1px solid var(--glass-border); border-radius: 14px;
-      padding: 12px; width: 230px; display: none; flex-direction: column; gap: 4px;
-      box-shadow: 0 15px 35px rgba(0,0,0,0.8);
-    }
-    .ott-menu-popup.active { display: flex; animation: slideUp 0.2s ease; }
+#progress-track {
+  position: relative; width: 100%; height: 5px; border-radius: 4px;
+  background: rgba(255,255,255,.22); margin-bottom: 14px; cursor: pointer;
+}
+#progress-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0%; border-radius: 4px; background: var(--ev-orange); }
+#progress-thumb {
+  position: absolute; top: 50%; width: 12px; height: 12px; border-radius: 50%;
+  background: #fff; box-shadow: 0 0 8px var(--ev-orange); transform: translate(-50%, -50%); left: 0%;
+}
 
-    @keyframes slideUp {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+#controls-row { display: flex; align-items: center; gap: 12px; }
+.player-btn {
+  appearance: none; border: none; background: transparent; color: rgba(255,255,255,.92);
+  width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; border-radius: 8px; transition: background .18s;
+}
+.player-btn:hover { background: rgba(255,255,255,.15); }
 
-    .ott-menu-item {
-      padding: 8px 12px; border-radius: 8px; font-size: 12px; font-weight: 700;
-      display: flex; align-items: center; justify-content: space-between;
-      cursor: pointer; color: #cbd5e1; transition: all 0.2s;
-    }
-    .ott-menu-item:hover, .ott-menu-item.active {
-      background: var(--orange); color: #fff; box-shadow: 0 0 12px var(--orange-glow);
-    }
+.live-pill {
+  border: none; cursor: pointer; display: flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 800; color: #ff5a5a; padding: 4px 10px;
+  border-radius: 20px; background: rgba(255,69,69,.14); border: 1px solid rgba(255,69,69,.35);
+}
+.live-dot { width: 6px; height: 6px; border-radius: 50%; background: #ff4545; animation: live-blink 1.4s infinite; }
+@keyframes live-blink { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
 
-    /* Engine Container Layers */
-    #jw-player-container, #fc-player-container {
-      position: fixed; inset: 0; z-index: 50; display: none; background: #000;
-    }
-  </style>
+.live-pill.is-behind { color: #ffb020; background: rgba(255,176,32,.14); border-color: rgba(255,176,32,.35); }
+.live-pill.is-behind .live-dot { background: #ffb020; animation: none; }
+
+#resizeBtn { width: auto; height: 28px; padding: 0 10px; border-radius: 14px; background: rgba(255,255,255,.1); font-size: 10.5px; font-weight: 800; }
+
+#qualityMenu {
+  position: absolute; right: 16px; bottom: 70px; z-index: 15; min-width: 150px;
+  background: rgba(18,18,22,.95); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,.15);
+  border-radius: 14px; padding: 8px; display: none; flex-direction: column; gap: 2px;
+}
+#qualityMenu.open { display: flex; }
+
+/* ERROR SCREEN */
+#error-screen {
+  position: fixed; inset: 0; z-index: 80; background: #0d0d16;
+  display: none; align-items: center; justify-content: center; padding: 24px;
+}
+#error-screen.show { display: flex; }
+.error-card {
+  background: rgba(255,255,255,.04); border: 1.5px solid rgba(255,255,255,.1);
+  border-radius: 20px; padding: 40px 28px; max-width: 380px; width: 100%; text-align: center;
+}
+.error-icon { width: 64px; height: 64px; border-radius: 50%; background: rgba(255,255,255,.05); display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; }
+.error-title { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 8px; }
+.error-badge { display: inline-block; background: rgba(245,165,0,.15); border: 1px solid rgba(245,165,0,.3); color: #f5a500; font-size: 12px; font-weight: 700; padding: 3px 12px; border-radius: 20px; margin-bottom: 12px; }
+.error-body { font-size: 13px; color: rgba(255,255,255,.45); line-height: 1.6; margin-bottom: 20px; }
+.btn-retry { background: var(--ev-orange); color: #fff; font-weight: 800; padding: 10px 20px; border-radius: 20px; border: none; cursor: pointer; width: 100%; }
+
+/* BACKUP ENGINE LAYERS */
+#jw-player-container, #fc-player-container { position: fixed; inset: 0; z-index: 50; display: none; background: #000; }
+</style>
 </head>
 <body>
 
-<div class="ott-player-container" id="playerContainer">
-  <div class="ambient-glow"></div>
-
-  <!-- Loader Overlay -->
-  <div id="loader" class="absolute inset-0 bg-black/95 z-[100] flex flex-col items-center justify-center">
-    <div class="w-16 h-16 border-4 border-orange-500/20 border-t-orange-500 rounded-full animate-spin mb-4"></div>
-    <div id="loaderText" class="text-xs font-bold tracking-widest text-orange-500 uppercase animate-pulse">CONNECTING SECURE STREAM...</div>
+<!-- TOP HEADER & CONTROLS -->
+<div class="top-header-bar">
+  <div class="brand-left">
+    <a href="index.html" class="logo-btn">
+      <img src="https://raw.githubusercontent.com/saptarshiorg/saptarshiorg.github.io/main/magenta.png" alt="EV SPORTS">
+    </a>
+    <span id="matchTitleText" class="text-xs font-bold text-gray-200 hidden md:inline-block">LIVE STREAM</span>
   </div>
 
-  <!-- Tap Unmute Button -->
-  <button id="unmuteBtn" class="hidden absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[90] btn btn-danger rounded-full px-5 py-2.5 font-bold shadow-2xl animate-bounce">
-    <span class="material-icons-round align-middle me-1">volume_off</span> TAP TO UNMUTE
-  </button>
-
-  <!-- Main Video Element -->
-  <video id="video" autoplay muted playsinline></video>
-
-  <!-- OTT Overlay Controls -->
-  <div class="ott-overlay" id="ottOverlay">
-    
-    <!-- Top Bar Header -->
-    <div class="p-4 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <a href="index.html" class="w-9 h-9 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white transition">
-          <span class="material-icons-round text-lg">arrow_back</span>
-        </a>
-        <div>
-          <h1 id="streamTitle" class="text-sm md:text-base font-extrabold tracking-wide m-0 text-white">LIVE STREAM</h1>
-          <div class="flex items-center gap-2 mt-0.5">
-            <span class="flex items-center gap-1 text-[10px] font-extrabold bg-red-600/80 text-white px-2 py-0.5 rounded">
-              <span class="w-1.5 h-1.5 bg-white rounded-full animate-ping"></span> LIVE
-            </span>
-            <span id="activeServerBadge" class="text-[11px] text-gray-400 font-semibold">Server: Amazon CDN</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Controls Right Actions -->
-      <div class="flex items-center gap-2">
-        <!-- SERVER SELECTOR BUTTON -->
-        <div class="relative">
-          <button id="btnServerSelect" class="bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/40 text-orange-300 px-3 py-1.5 rounded-lg text-xs font-bold transition backdrop-blur-md flex items-center gap-1">
-            <span id="currentServerLabel">🌐 Server 1</span>
-            <span class="material-icons-round text-base">expand_more</span>
-          </button>
-
-          <!-- Server Select Popup Menu -->
-          <div class="ott-menu-popup" id="serverMenu" style="top: 45px; right: 0; bottom: auto;">
-            <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-2">Select Server Link</div>
-            <div class="ott-menu-item active" id="serverOptAmazon" onclick="changeServer('amazon_server')">🇺🇸 Server 1 (Amazon CDN)</div>
-            <div class="ott-menu-item" id="serverOptCloudfront" onclick="changeServer('cloudfront_server')">⚡ Server 2 (Cloudfront)</div>
-            <div class="ott-menu-item" id="serverOptAkamai" onclick="changeServer('akamai_server')">🛡️ Server 3 (Akamai)</div>
-          </div>
-        </div>
-
-        <!-- ENGINE SELECTOR BUTTON -->
-        <div class="relative">
-          <button id="btnEngineSelect" class="bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/40 text-yellow-300 px-3 py-1.5 rounded-lg text-xs font-bold transition backdrop-blur-md flex items-center gap-1">
-            <span id="currentEngineLabel">⚡ Engine: Shaka</span>
-            <span class="material-icons-round text-base">expand_more</span>
-          </button>
-
-          <!-- Engine Select Popup Menu -->
-          <div class="ott-menu-popup" id="engineMenu" style="top: 45px; right: 0; bottom: auto;">
-            <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-2">Select Player Engine</div>
-            <div class="ott-menu-item active" onclick="switchEngine('shaka')">⚡ Engine 1: Shaka (Default)</div>
-            <div class="ott-menu-item" onclick="switchEngine('jw')">🍿 Engine 2: JW Player</div>
-            <div class="ott-menu-item" onclick="switchEngine('fc')">🔥 Engine 3: FC HLS Player</div>
-          </div>
-        </div>
+  <div class="top-actions">
+    <!-- Server Selector -->
+    <div class="relative">
+      <button id="btnServer" class="top-btn">
+        <span id="lblServer">🌐 Server 1</span>
+        <span class="material-icons-round text-sm">expand_more</span>
+      </button>
+      <div class="pop-menu" id="menuServer">
+        <div class="pop-menu-title">Select Link Server</div>
+        <div class="pop-menu-item active" onclick="switchServer('amazon_server')">🇺🇸 Server 1 (Amazon CDN)</div>
+        <div class="pop-menu-item" onclick="switchServer('cloudfront_server')">⚡ Server 2 (Cloudfront)</div>
+        <div class="pop-menu-item" onclick="switchServer('akamai_server')">🛡️ Server 3 (Akamai)</div>
       </div>
     </div>
 
-    <!-- Center Controls -->
-    <div class="center-controls">
-      <button class="btn-circle-action" id="btnRewind" title="Rewind 10s">
-        <span class="material-icons-round text-2xl">replay_10</span>
+    <!-- Engine Selector -->
+    <div class="relative">
+      <button id="btnEngine" class="top-btn" style="border-color: rgba(255,122,26,0.4); color: var(--ev-orange);">
+        <span id="lblEngine">⚡ Shaka Main</span>
+        <span class="material-icons-round text-sm">expand_more</span>
       </button>
-
-      <button class="btn-circle-action btn-play-main" id="btnCenterPlay" title="Play/Pause">
-        <span class="material-icons-round text-4xl" id="centerPlayIcon">pause</span>
-      </button>
-
-      <button class="btn-circle-action" id="btnForward" title="Forward 10s">
-        <span class="material-icons-round text-2xl">forward_10</span>
-      </button>
-    </div>
-
-    <!-- Bottom Controls Bar -->
-    <div class="p-4 md:p-6 flex flex-col gap-3">
-      <div class="seekbar-wrap" id="seekbar">
-        <div class="seekbar-fill" id="seekFill">
-          <div class="seekbar-handle"></div>
-        </div>
-      </div>
-
-      <div class="flex items-center justify-between text-white">
-        <div class="flex items-center gap-4">
-          <button id="btnPlay" class="hover:text-orange-500 transition">
-            <span class="material-icons-round text-2xl" id="playIcon">pause</span>
-          </button>
-
-          <div class="flex items-center gap-2 group">
-            <button id="btnMute" class="hover:text-orange-500 transition">
-              <span class="material-icons-round text-2xl" id="volumeIcon">volume_up</span>
-            </button>
-            <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="1" 
-                   class="w-16 md:w-20 accent-orange-500 h-1 bg-white/20 rounded cursor-pointer opacity-80 group-hover:opacity-100 transition">
-          </div>
-
-          <div class="text-xs font-bold tracking-wide text-gray-300">
-            <span id="currentTime">00:00</span> / <span id="duration">LIVE</span>
-          </div>
-        </div>
-
-        <div class="flex items-center gap-3">
-          <button id="btnQuality" class="hover:text-orange-500 transition flex items-center gap-1 bg-white/10 px-2.5 py-1 rounded-lg text-xs font-bold border border-white/10">
-            <span class="material-icons-round text-base">settings</span>
-            <span id="qualityText">Auto</span>
-          </button>
-
-          <button id="btnSpeed" class="hover:text-orange-500 transition flex items-center gap-1 bg-white/10 px-2.5 py-1 rounded-lg text-xs font-bold border border-white/10">
-            <span id="speedText">1.0x</span>
-          </button>
-
-          <button id="btnPip" class="hover:text-orange-500 transition hidden md:block">
-            <span class="material-icons-round text-2xl">picture_in_picture_alt</span>
-          </button>
-
-          <button id="btnFullscreen" class="hover:text-orange-500 transition">
-            <span class="material-icons-round text-2xl" id="fullscreenIcon">fullscreen</span>
-          </button>
-        </div>
+      <div class="pop-menu" id="menuEngine">
+        <div class="pop-menu-title">Select Engine</div>
+        <div class="pop-menu-item active" onclick="switchEngine('shaka')">⚡ Engine 1: Shaka (Main)</div>
+        <div class="pop-menu-item" onclick="switchEngine('jw')">🍿 Engine 2: JW Player</div>
+        <div class="pop-menu-item" onclick="switchEngine('fc')">🔥 Engine 3: FC HLS Engine</div>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- Quality Menu -->
-  <div class="ott-menu-popup" id="qualityMenu">
-    <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-2">Video Quality</div>
-    <div id="qualityList"></div>
+<!-- DUAL RING LOADING SCREEN -->
+<div id="loading-screen">
+  <div class="loader">
+    <div class="loader-ring"></div>
+    <div class="loader-ring-inner"></div>
+    <div class="loader-core"></div>
+  </div>
+  <div class="loading-text">
+    <div class="loading-label" id="loaderLabel">Connecting to Stream</div>
+    <div class="loading-sub">Fetching Live Feed...</div>
+  </div>
+</div>
+
+<!-- MAIN EV SPORTS PLAYER SHELL -->
+<div id="player-shell">
+  <video id="video" playsinline webkit-playsinline muted autoplay preload="auto"></video>
+  
+  <div id="center-overlay">
+    <button type="button" id="centerPlayBtn" class="center-play-btn">
+      <span class="material-icons-round text-3xl">play_arrow</span>
+    </button>
   </div>
 
-  <!-- Speed Menu -->
-  <div class="ott-menu-popup" id="speedMenu">
-    <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-2">Playback Speed</div>
-    <div class="ott-menu-item active" onclick="setSpeed(1.0)">1.0x (Normal)</div>
-    <div class="ott-menu-item" onclick="setSpeed(1.25)">1.25x</div>
-    <div class="ott-menu-item" onclick="setSpeed(1.5)">1.5x</div>
-    <div class="ott-menu-item" onclick="setSpeed(2.0)">2.0x</div>
+  <div id="controls-bar">
+    <div id="progress-track">
+      <div id="progress-fill"></div>
+      <div id="progress-thumb"></div>
+    </div>
+    <div id="controls-row">
+      <button type="button" id="playPauseBtn" class="player-btn"><span class="material-icons-round text-xl">pause</span></button>
+      <button type="button" id="muteBtn" class="player-btn"><span class="material-icons-round text-xl">volume_up</span></button>
+      <button type="button" class="live-pill" id="livePill"><span class="live-dot"></span><span id="livePillText">LIVE</span></button>
+      <span style="flex:1;"></span>
+      <button type="button" id="resizeBtn" class="player-btn">FIT</button>
+      <button type="button" id="qualityBtn" class="player-btn"><span class="material-icons-round text-lg">settings</span></button>
+      <button type="button" id="pipBtn" class="player-btn"><span class="material-icons-round text-lg">picture_in_picture_alt</span></button>
+      <button type="button" id="fullscreenBtn" class="player-btn"><span class="material-icons-round text-xl">fullscreen</span></button>
+    </div>
   </div>
 
-  <!-- Backup Container Layers -->
-  <div id="jw-player-container"></div>
-  <div id="fc-player-container">
-    <video id="fcVideo" class="w-full h-full object-contain" autoplay muted playsinline></video>
+  <div id="qualityMenu"></div>
+</div>
+
+<!-- ERROR CARD SCREEN -->
+<div id="error-screen">
+  <div class="error-card">
+    <div class="error-icon">
+      <span class="material-icons-round text-3xl text-orange-500">wifi_off</span>
+    </div>
+    <div class="error-title">Stream Interrupted</div>
+    <div class="error-badge" id="errorBadge">Network Error</div>
+    <div class="error-body" id="errorBody">Having trouble connecting to this server link. Trying alternate backup link...</div>
+    <button class="btn-retry" onclick="retryCurrentStream()">Retry Stream</button>
   </div>
+</div>
+
+<!-- BACKUP ENGINE LAYERS -->
+<div id="jw-player-container"></div>
+<div id="fc-player-container">
+  <video id="fcVideo" class="w-full h-full object-contain" autoplay muted playsinline></video>
 </div>
 
 <script src="config.js"></script>
 
 <script>
 let currentPayload = null;
-let activeServerType = "amazon_server";
-let activeEngine = "shaka"; 
+let activeServer = "amazon_server";
+let activeEngine = "shaka"; // 'shaka' | 'jw' | 'fc'
 let shakaPlayer = null;
 let fcHls = null;
-let videoElem = null;
-let controlsTimeout = null;
+let video = null;
+let controlsTimer = null;
+let resizeModes = ['fit', 'fill', 'normal'];
+let resizeIndex = 0;
 
 document.addEventListener("DOMContentLoaded", async () => {
-  videoElem = document.getElementById("video");
+  video = document.getElementById("video");
 
   const rawPayload = sessionStorage.getItem("__EV_TITU_STREAM__");
-  activeServerType = sessionStorage.getItem("__EV_TITU_SERVER__") || "amazon_server";
+  activeServer = sessionStorage.getItem("__EV_TITU_SERVER__") || "amazon_server";
 
   if (!rawPayload) {
-    alert("Session Expired. Returning to Dashboard.");
-    window.location.href = "index.html";
+    showError("No Stream Session", "Session Expired. Returning to Dashboard.");
+    setTimeout(() => window.location.href = "index.html", 2500);
     return;
   }
 
   try {
     currentPayload = JSON.parse(decodeURIComponent(escape(atob(rawPayload))));
-    document.getElementById("streamTitle").textContent = currentPayload.name || "Live Stream";
+    document.getElementById("matchTitleText").textContent = currentPayload.name || "Live Stream";
   } catch(e) {
     window.location.href = "index.html";
     return;
   }
 
-  updateServerMenuLabels();
-  initShakaEngine();
-  setupUIEvents();
-  setupKeyboardShortcuts();
+  initShakaMainEngine();
+  setupFCControls();
 });
 
-function showLoader(msg = "CONNECTING SECURE STREAM...") {
-  document.getElementById("loaderText").textContent = msg;
-  document.getElementById("loader").style.display = "flex";
+function showLoader(msg = "Connecting to Stream") {
+  document.getElementById("loaderLabel").textContent = msg;
+  document.getElementById("loading-screen").style.display = "flex";
+  document.getElementById("error-screen").classList.remove("show");
 }
 
 function hideLoader() {
-  document.getElementById("loader").style.display = "none";
+  document.getElementById("loading-screen").style.display = "none";
+}
+
+function showError(badge, msg) {
+  hideLoader();
+  document.getElementById("errorBadge").textContent = badge;
+  document.getElementById("errorBody").textContent = msg;
+  document.getElementById("error-screen").classList.add("show");
 }
 
 function getStreamUrl() {
   const s = currentPayload.servers || {};
-  return s[activeServerType] || s.amazon_server || s.cloudfront_server || s.akamai_server || "";
+  return s[activeServer] || s.amazon_server || s.cloudfront_server || s.akamai_server || "";
 }
 
 function parseDRM(drmStr) {
@@ -350,22 +366,21 @@ function parseDRM(drmStr) {
   return obj;
 }
 
-// ENGINE 1: SHAKA PLAYER
-async function initShakaEngine() {
+// 1. MAIN SHAKA PLAYER ENGINE
+async function initShakaMainEngine() {
   shaka.polyfill.installAll();
   if (!shaka.Player.isBrowserSupported()) return;
 
-  showLoader("LOADING STREAM...");
+  showLoader("Fetching Live Feed...");
 
-  // Destroy previous instance to prevent black screen canvas lock
   if (shakaPlayer) {
     try { await shakaPlayer.destroy(); } catch(e) {}
     shakaPlayer = null;
   }
 
-  shakaPlayer = new shaka.Player(videoElem);
+  shakaPlayer = new shaka.Player(video);
 
-  // Request Header Interceptor
+  // Request Headers
   shakaPlayer.getNetworkingEngine().registerRequestFilter((type, request) => {
     request.headers['Referer'] = 'https://watch.tataplay.com/';
   });
@@ -375,90 +390,82 @@ async function initShakaEngine() {
     shakaPlayer.configure({ drm: { clearKeys: parsedDrm } });
   }
 
-  shakaPlayer.addEventListener('variantchanged', onQualityChanged);
-
   try {
     const streamUrl = getStreamUrl();
-    if(!streamUrl) throw new Error("Server URL Empty");
+    if (!streamUrl) throw new Error("Empty Stream URL");
 
     await shakaPlayer.load(streamUrl);
     hideLoader();
 
-    const playPromise = videoElem.play();
-    if (playPromise !== undefined) {
-      playPromise.then(() => {
-        if (videoElem.muted) showUnmuteBtn();
-      }).catch(() => showUnmuteBtn());
-    }
-
-    populateQualityMenu();
+    video.play().catch(() => {});
+    buildQualityMenu();
   } catch (err) {
     console.error("Shaka error:", err);
     
-    // Auto-Fallback to next available server if first fails
-    if (activeServerType === "amazon_server" && currentPayload.servers?.cloudfront_server) {
-      console.log("Amazon server failed. Auto-switching to Cloudfront Server...");
-      changeServer("cloudfront_server");
-    } else if (activeServerType !== "akamai_server" && currentPayload.servers?.akamai_server) {
-      console.log("Auto-switching to Akamai Server...");
-      changeServer("akamai_server");
+    // Auto-fallback if server 1 fails
+    if (activeServer === "amazon_server" && currentPayload.servers?.cloudfront_server) {
+      switchServer("cloudfront_server");
+    } else if (activeServer !== "akamai_server" && currentPayload.servers?.akamai_server) {
+      switchServer("akamai_server");
     } else {
-      hideLoader();
-      alert("Selected Server Network Error. Trying Backup Engine...");
-      switchEngine('jw');
+      showError("Connection Error", "Having trouble connecting to this server link.");
     }
   }
 }
 
-// SERVER SWITCHING LOGIC (IN-PLAYER)
-function changeServer(serverKey) {
+// SERVER SWITCHING
+function switchServer(serverKey) {
   const s = currentPayload.servers || {};
   if (!s[serverKey]) {
-    alert("This server is not available for this stream.");
+    alert("This server is not available for this match.");
     return;
   }
 
-  activeServerType = serverKey;
+  activeServer = serverKey;
   sessionStorage.setItem("__EV_TITU_SERVER__", serverKey);
-  
-  updateServerMenuLabels();
 
-  if (activeEngine === 'shaka') {
-    initShakaEngine();
-  } else if (activeEngine === 'jw') {
+  const lblMap = { amazon_server: "🌐 Server 1", cloudfront_server: "⚡ Server 2", akamai_server: "🛡️ Server 3" };
+  document.getElementById("lblServer").textContent = lblMap[serverKey] || "Server 1";
+
+  if (activeEngine === 'shaka') initShakaMainEngine();
+  else if (activeEngine === 'jw') initJWEngine();
+  else if (activeEngine === 'fc') initFCEngine();
+
+  document.getElementById("menuServer").classList.remove("show");
+}
+
+// ENGINE SWITCHING
+function switchEngine(engineType) {
+  activeEngine = engineType;
+  const jwWrap = document.getElementById("jw-player-container");
+  const fcWrap = document.getElementById("fc-player-container");
+  const shell = document.getElementById("player-shell");
+  const lblEngine = document.getElementById("lblEngine");
+
+  jwWrap.style.display = "none";
+  fcWrap.style.display = "none";
+  shell.style.display = "block";
+
+  if (engineType === 'shaka') {
+    lblEngine.textContent = "⚡ Shaka Main";
+    initShakaMainEngine();
+  } else if (engineType === 'jw') {
+    lblEngine.textContent = "🍿 JW Player";
+    shell.style.display = "none";
+    jwWrap.style.display = "block";
     initJWEngine();
-  } else if (activeEngine === 'fc') {
+  } else if (engineType === 'fc') {
+    lblEngine.textContent = "🔥 FC Player";
+    shell.style.display = "none";
+    fcWrap.style.display = "block";
     initFCEngine();
   }
+
+  document.getElementById("menuEngine").classList.remove("show");
 }
 
-function updateServerMenuLabels() {
-  const labelMap = {
-    amazon_server: "🌐 Server 1 (Amazon)",
-    cloudfront_server: "⚡ Server 2 (Cloudfront)",
-    akamai_server: "🛡️ Server 3 (Akamai)"
-  };
-
-  const badgeMap = {
-    amazon_server: "Server: Amazon CDN",
-    cloudfront_server: "Server: Cloudfront Fast",
-    akamai_server: "Server: Akamai Secure"
-  };
-
-  document.getElementById("currentServerLabel").textContent = labelMap[activeServerType] || "🌐 Server 1";
-  document.getElementById("activeServerBadge").textContent = badgeMap[activeServerType] || "Server: Active";
-
-  // Highlight active menu item
-  document.getElementById("serverOptAmazon").classList.toggle("active", activeServerType === "amazon_server");
-  document.getElementById("serverOptCloudfront").classList.toggle("active", activeServerType === "cloudfront_server");
-  document.getElementById("serverOptAkamai").classList.toggle("active", activeServerType === "akamai_server");
-
-  document.getElementById("serverMenu").classList.remove("active");
-}
-
-// ENGINE 2: JW PLAYER
 function initJWEngine() {
-  showLoader("INIT JW PLAYER...");
+  showLoader("Loading JW Engine...");
   jwplayer.key = CONFIG.JW_KEY;
   const parsedDrm = parseDRM(currentPayload.drm);
   let jwDrmObj = {};
@@ -473,19 +480,17 @@ function initJWEngine() {
     width: "100%", height: "100%",
     autostart: true, stretching: "uniform"
   });
-
   hideLoader();
 }
 
-// ENGINE 3: FC HLS PLAYER ENGINE
 function initFCEngine() {
-  showLoader("INIT FC HLS PLAYER...");
+  showLoader("Loading FC Engine...");
   const fcVid = document.getElementById("fcVideo");
   const streamUrl = getStreamUrl();
 
   if (Hls.isSupported()) {
     if (fcHls) fcHls.destroy();
-    fcHls = new Hls({ enableWorker: true, maxBufferLength: 30 });
+    fcHls = new Hls({ enableWorker: true });
     fcHls.loadSource(streamUrl);
     fcHls.attachMedia(fcVid);
     fcHls.on(Hls.Events.MANIFEST_PARSED, () => {
@@ -501,246 +506,142 @@ function initFCEngine() {
   }
 }
 
-// SWITCH ENGINE LOGIC
-function switchEngine(engineType) {
-  activeEngine = engineType;
-  
-  const jwWrap = document.getElementById("jw-player-container");
-  const fcWrap = document.getElementById("fc-player-container");
-  const ottOverlay = document.getElementById("ottOverlay");
-  const currentLabel = document.getElementById("currentEngineLabel");
+// SETUP FC UI CONTROLS & BINDINGS
+function setupFCControls() {
+  const shell = document.getElementById("player-shell");
+  const centerOverlay = document.getElementById("center-overlay");
 
-  jwWrap.style.display = "none";
-  fcWrap.style.display = "none";
-
-  if (engineType === 'shaka') {
-    currentLabel.textContent = "⚡ Engine: Shaka";
-    ottOverlay.style.display = "flex";
-    initShakaEngine();
-  } 
-  else if (engineType === 'jw') {
-    currentLabel.textContent = "🍿 Engine: JW Player";
-    jwWrap.style.display = "block";
-    initJWEngine();
-  } 
-  else if (engineType === 'fc') {
-    currentLabel.textContent = "🔥 Engine: FC Player";
-    fcWrap.style.display = "block";
-    initFCEngine();
-  }
-
-  document.getElementById("engineMenu").classList.remove("active");
-}
-
-// CONTROLS & EVENT BINDINGS
-function setupUIEvents() {
-  const overlay = document.getElementById("ottOverlay");
-  const container = document.getElementById("playerContainer");
-
-  const resetInactivity = () => {
-    overlay.classList.remove("hide-controls");
-    clearTimeout(controlsTimeout);
-    controlsTimeout = setTimeout(() => {
-      if (!videoElem.paused) overlay.classList.add("hide-controls");
-    }, 3500);
+  const showControls = () => {
+    shell.classList.add("controls-visible");
+    clearTimeout(controlsTimer);
+    if (!video.paused) {
+      controlsTimer = setTimeout(() => {
+        shell.classList.remove("controls-visible");
+        document.getElementById("qualityMenu").classList.remove("open");
+      }, 3200);
+    }
   };
 
-  container.addEventListener("mousemove", resetInactivity);
-  container.addEventListener("touchstart", resetInactivity);
+  shell.addEventListener("mousemove", showControls);
+  shell.addEventListener("touchstart", showControls);
 
   const togglePlay = () => {
-    if (videoElem.paused) {
-      videoElem.play();
-      updatePlayIcons(true);
+    if (video.paused) {
+      video.play();
     } else {
-      videoElem.pause();
-      updatePlayIcons(false);
+      video.pause();
     }
   };
 
-  document.getElementById("btnPlay").onclick = togglePlay;
-  document.getElementById("btnCenterPlay").onclick = togglePlay;
+  document.getElementById("playPauseBtn").onclick = togglePlay;
+  document.getElementById("centerPlayBtn").onclick = togglePlay;
 
-  document.getElementById("btnRewind").onclick = () => { videoElem.currentTime -= 10; };
-  document.getElementById("btnForward").onclick = () => { videoElem.currentTime += 10; };
-
-  const volumeSlider = document.getElementById("volumeSlider");
-  const btnMute = document.getElementById("btnMute");
-
-  volumeSlider.oninput = (e) => {
-    videoElem.volume = e.target.value;
-    videoElem.muted = e.target.value == 0;
-    updateVolumeIcon();
-  };
-
-  btnMute.onclick = () => {
-    videoElem.muted = !videoElem.muted;
-    updateVolumeIcon();
-  };
-
-  videoElem.addEventListener("timeupdate", () => {
-    if (!videoElem.duration) return;
-    const pct = (videoElem.currentTime / videoElem.duration) * 100;
-    document.getElementById("seekFill").style.width = pct + "%";
-    document.getElementById("currentTime").textContent = formatTime(videoElem.currentTime);
-    if (isFinite(videoElem.duration)) {
-      document.getElementById("duration").textContent = formatTime(videoElem.duration);
-    }
+  video.addEventListener("play", () => {
+    document.getElementById("playPauseBtn").innerHTML = '<span class="material-icons-round text-xl">pause</span>';
+    centerOverlay.classList.remove("show");
   });
 
-  document.getElementById("seekbar").onclick = (e) => {
+  video.addEventListener("pause", () => {
+    document.getElementById("playPauseBtn").innerHTML = '<span class="material-icons-round text-xl">play_arrow</span>';
+    centerOverlay.classList.add("show");
+  });
+
+  // Mute
+  document.getElementById("muteBtn").onclick = () => {
+    video.muted = !video.muted;
+    document.getElementById("muteBtn").innerHTML = video.muted 
+      ? '<span class="material-icons-round text-xl">volume_off</span>' 
+      : '<span class="material-icons-round text-xl">volume_up</span>';
+  };
+
+  // Resize Mode (FIT / FILL / NORMAL)
+  document.getElementById("resizeBtn").onclick = () => {
+    resizeIndex = (resizeIndex + 1) % resizeModes.length;
+    const mode = resizeModes[resizeIndex];
+    video.style.objectFit = mode === 'fit' ? 'contain' : (mode === 'fill' ? 'cover' : 'fill');
+    document.getElementById("resizeBtn").textContent = mode.toUpperCase();
+  };
+
+  // Progress Bar
+  video.addEventListener("timeupdate", () => {
+    if (!video.duration) return;
+    const pct = (video.currentTime / video.duration) * 100;
+    document.getElementById("progress-fill").style.width = pct + "%";
+    document.getElementById("progress-thumb").style.left = pct + "%";
+  });
+
+  document.getElementById("progress-track").onclick = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    const pos = (e.clientX - rect.left) / rect.width;
-    videoElem.currentTime = pos * videoElem.duration;
+    const ratio = (e.clientX - rect.left) / rect.width;
+    video.currentTime = ratio * video.duration;
   };
 
-  document.getElementById("btnFullscreen").onclick = toggleFullscreen;
-
-  document.getElementById("btnQuality").onclick = (e) => {
+  // Quality Toggle
+  document.getElementById("qualityBtn").onclick = (e) => {
     e.stopPropagation();
-    toggleMenu("qualityMenu");
+    document.getElementById("qualityMenu").classList.toggle("open");
   };
 
-  document.getElementById("btnSpeed").onclick = (e) => {
+  // Header Dropdowns Toggle
+  document.getElementById("btnServer").onclick = (e) => {
     e.stopPropagation();
-    toggleMenu("speedMenu");
+    document.getElementById("menuServer").classList.toggle("show");
   };
 
-  document.getElementById("btnServerSelect").onclick = (e) => {
+  document.getElementById("btnEngine").onclick = (e) => {
     e.stopPropagation();
-    toggleMenu("serverMenu");
-  };
-
-  document.getElementById("btnEngineSelect").onclick = (e) => {
-    e.stopPropagation();
-    toggleMenu("engineMenu");
+    document.getElementById("menuEngine").classList.toggle("show");
   };
 
   document.addEventListener("click", () => {
-    document.getElementById("qualityMenu").classList.remove("active");
-    document.getElementById("speedMenu").classList.remove("active");
-    document.getElementById("serverMenu").classList.remove("active");
-    document.getElementById("engineMenu").classList.remove("active");
+    document.getElementById("menuServer").classList.remove("show");
+    document.getElementById("menuEngine").classList.remove("show");
+    document.getElementById("qualityMenu").classList.remove("open");
   });
-}
 
-function updatePlayIcons(isPlaying) {
-  const icon = isPlaying ? "pause" : "play_arrow";
-  document.getElementById("playIcon").textContent = icon;
-  document.getElementById("centerPlayIcon").textContent = icon;
-}
-
-function updateVolumeIcon() {
-  const icon = document.getElementById("volumeIcon");
-  if (videoElem.muted || videoElem.volume === 0) icon.textContent = "volume_off";
-  else if (videoElem.volume < 0.5) icon.textContent = "volume_down";
-  else icon.textContent = "volume_up";
-}
-
-function toggleFullscreen() {
-  const container = document.getElementById("playerContainer");
-  if (!document.fullscreenElement) {
-    container.requestFullscreen().catch(err => console.error(err));
-    document.getElementById("fullscreenIcon").textContent = "fullscreen_exit";
-  } else {
-    document.exitFullscreen();
-    document.getElementById("fullscreenIcon").textContent = "fullscreen";
-  }
-}
-
-function populateQualityMenu() {
-  if (!shakaPlayer) return;
-  const list = document.getElementById("qualityList");
-  list.innerHTML = "";
-
-  const tracks = shakaPlayer.getVariantTracks();
-  const sorted = tracks.sort((a,b) => b.height - a.height);
-  
-  const autoItem = document.createElement("div");
-  autoItem.className = "ott-menu-item active";
-  autoItem.textContent = "Auto (Recommended)";
-  autoItem.onclick = () => {
-    shakaPlayer.configure({ abr: { enabled: true } });
-    document.getElementById("qualityText").textContent = "Auto";
-    highlightActiveQuality(autoItem);
+  // Fullscreen
+  document.getElementById("fullscreenBtn").onclick = () => {
+    if (!document.fullscreenElement) shell.requestFullscreen();
+    else document.exitFullscreen();
   };
-  list.appendChild(autoItem);
+}
 
-  let addedHeights = new Set();
-  sorted.forEach(track => {
-    if (track.height && !addedHeights.has(track.height)) {
-      addedHeights.add(track.height);
-      const item = document.createElement("div");
-      item.className = "ott-menu-item";
-      item.textContent = `${track.height}p HD`;
-      item.onclick = () => {
+function buildQualityMenu() {
+  if (!shakaPlayer) return;
+  const menu = document.getElementById("qualityMenu");
+  menu.innerHTML = '<div style="font-size:10px; font-weight:800; color:rgba(255,255,255,0.4); margin-bottom:4px;">QUALITY</div>';
+
+  const tracks = shakaPlayer.getVariantTracks().sort((a,b) => b.height - a.height);
+  
+  const autoOpt = document.createElement("div");
+  autoOpt.className = "pop-menu-item active";
+  autoOpt.textContent = "Auto";
+  autoOpt.onclick = () => shakaPlayer.configure({ abr: { enabled: true } });
+  menu.appendChild(autoOpt);
+
+  let added = new Set();
+  tracks.forEach(t => {
+    if (t.height && !added.has(t.height)) {
+      added.add(t.height);
+      const opt = document.createElement("div");
+      opt.className = "pop-menu-item";
+      opt.textContent = t.height + "p";
+      opt.onclick = () => {
         shakaPlayer.configure({ abr: { enabled: false } });
-        shakaPlayer.selectVariantTrack(track, true);
-        document.getElementById("qualityText").textContent = track.height + "p";
-        highlightActiveQuality(item);
+        shakaPlayer.selectVariantTrack(t, true);
+        menu.classList.remove("open");
       };
-      list.appendChild(item);
+      menu.appendChild(opt);
     }
   });
 }
 
-function highlightActiveQuality(activeItem) {
-  document.querySelectorAll("#qualityList .ott-menu-item").forEach(el => el.classList.remove("active"));
-  activeItem.classList.add("active");
-  document.getElementById("qualityMenu").classList.remove("active");
+function retryCurrentStream() {
+  document.getElementById("error-screen").classList.remove("show");
+  initShakaMainEngine();
 }
 
-function onQualityChanged() {
-  if (!shakaPlayer) return;
-  const tracks = shakaPlayer.getVariantTracks();
-  const active = tracks.find(t => t.active);
-  if (active && active.height) {
-    console.log("Current Quality:", active.height + "p");
-  }
-}
-
-function toggleMenu(menuId) {
-  const menu = document.getElementById(menuId);
-  const isVis = menu.classList.contains("active");
-  document.querySelectorAll(".ott-menu-popup").forEach(m => m.classList.remove("active"));
-  if (!isVis) menu.classList.add("active");
-}
-
-function setSpeed(spd) {
-  videoElem.playbackRate = spd;
-  document.getElementById("speedText").textContent = spd + "x";
-  document.getElementById("speedMenu").classList.remove("active");
-}
-
-function formatTime(sec) {
-  if (isNaN(sec)) return "00:00";
-  const m = Math.floor(sec / 60);
-  const s = Math.floor(sec % 60);
-  return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
-}
-
-function showUnmuteBtn() {
-  const btn = document.getElementById("unmuteBtn");
-  btn.classList.remove("hidden");
-  btn.onclick = () => {
-    videoElem.muted = false;
-    videoElem.play();
-    btn.classList.add("hidden");
-    updateVolumeIcon();
-  };
-}
-
-function setupKeyboardShortcuts() {
-  document.addEventListener("keydown", (e) => {
-    if (e.code === "Space") { e.preventDefault(); document.getElementById("btnPlay").click(); }
-    else if (e.code === "ArrowLeft") { videoElem.currentTime -= 10; }
-    else if (e.code === "ArrowRight") { videoElem.currentTime += 10; }
-    else if (e.code === "KeyF") { toggleFullscreen(); }
-    else if (e.code === "KeyM") { document.getElementById("btnMute").click(); }
-  });
-}
-
-// ANTI-EXTRACT SECURITY TRAPS
+// SECURITY TRAPS
 document.addEventListener('contextmenu', e => e.preventDefault());
 document.onkeydown = function(e) {
   if (e.keyCode == 123) return false;
