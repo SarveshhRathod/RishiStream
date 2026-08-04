@@ -20,7 +20,7 @@
     :root {
       --orange: #ff5a1f;
       --orange-glow: rgba(255, 90, 31, 0.4);
-      --glass-bg: rgba(12, 14, 18, 0.85);
+      --glass-bg: rgba(12, 14, 18, 0.88);
       --glass-border: rgba(255, 255, 255, 0.12);
     }
 
@@ -105,7 +105,7 @@
       position: absolute; bottom: 75px; right: 20px; z-index: 40;
       background: var(--glass-bg); backdrop-filter: blur(20px);
       border: 1px solid var(--glass-border); border-radius: 14px;
-      padding: 12px; width: 220px; display: none; flex-direction: column; gap: 4px;
+      padding: 12px; width: 230px; display: none; flex-direction: column; gap: 4px;
       box-shadow: 0 15px 35px rgba(0,0,0,0.8);
     }
     .ott-menu-popup.active { display: flex; animation: slideUp 0.2s ease; }
@@ -135,18 +135,18 @@
 <div class="ott-player-container" id="playerContainer">
   <div class="ambient-glow"></div>
 
-  <!-- Loader -->
+  <!-- Loader Overlay -->
   <div id="loader" class="absolute inset-0 bg-black/95 z-[100] flex flex-col items-center justify-center">
     <div class="w-16 h-16 border-4 border-orange-500/20 border-t-orange-500 rounded-full animate-spin mb-4"></div>
-    <div class="text-xs font-bold tracking-widest text-orange-500 uppercase animate-pulse">CONNECTING SECURE STREAM...</div>
+    <div id="loaderText" class="text-xs font-bold tracking-widest text-orange-500 uppercase animate-pulse">CONNECTING SECURE STREAM...</div>
   </div>
 
-  <!-- Tap Unmute -->
+  <!-- Tap Unmute Button -->
   <button id="unmuteBtn" class="hidden absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[90] btn btn-danger rounded-full px-5 py-2.5 font-bold shadow-2xl animate-bounce">
     <span class="material-icons-round align-middle me-1">volume_off</span> TAP TO UNMUTE
   </button>
 
-  <!-- Video Element -->
+  <!-- Main Video Element -->
   <video id="video" autoplay muted playsinline></video>
 
   <!-- OTT Overlay Controls -->
@@ -164,29 +164,48 @@
             <span class="flex items-center gap-1 text-[10px] font-extrabold bg-red-600/80 text-white px-2 py-0.5 rounded">
               <span class="w-1.5 h-1.5 bg-white rounded-full animate-ping"></span> LIVE
             </span>
-            <span id="engineBadgeText" class="text-[11px] text-gray-400 font-semibold">Shaka Engine (DRM HD)</span>
+            <span id="activeServerBadge" class="text-[11px] text-gray-400 font-semibold">Server: Amazon CDN</span>
           </div>
         </div>
       </div>
 
-      <!-- Engine Selector Button -->
-      <div class="relative">
-        <button id="btnEngineSelect" class="bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/40 text-yellow-300 px-3.5 py-1.5 rounded-lg text-xs font-bold transition backdrop-blur-md flex items-center gap-1">
-          <span id="currentEngineLabel">⚡ Engine: Shaka</span>
-          <span class="material-icons-round text-base">expand_more</span>
-        </button>
+      <!-- Controls Right Actions -->
+      <div class="flex items-center gap-2">
+        <!-- SERVER SELECTOR BUTTON -->
+        <div class="relative">
+          <button id="btnServerSelect" class="bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/40 text-orange-300 px-3 py-1.5 rounded-lg text-xs font-bold transition backdrop-blur-md flex items-center gap-1">
+            <span id="currentServerLabel">🌐 Server 1</span>
+            <span class="material-icons-round text-base">expand_more</span>
+          </button>
 
-        <!-- Engine Select Popup Menu -->
-        <div class="ott-menu-popup" id="engineMenu" style="top: 45px; right: 0; bottom: auto;">
-          <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-2">Select Player Engine</div>
-          <div class="ott-menu-item active" onclick="switchEngine('shaka')">⚡ Engine 1: Shaka (Default)</div>
-          <div class="ott-menu-item" onclick="switchEngine('jw')">🍿 Engine 2: JW Player</div>
-          <div class="ott-menu-item" onclick="switchEngine('fc')">🔥 Engine 3: FC HLS Player</div>
+          <!-- Server Select Popup Menu -->
+          <div class="ott-menu-popup" id="serverMenu" style="top: 45px; right: 0; bottom: auto;">
+            <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-2">Select Server Link</div>
+            <div class="ott-menu-item active" id="serverOptAmazon" onclick="changeServer('amazon_server')">🇺🇸 Server 1 (Amazon CDN)</div>
+            <div class="ott-menu-item" id="serverOptCloudfront" onclick="changeServer('cloudfront_server')">⚡ Server 2 (Cloudfront)</div>
+            <div class="ott-menu-item" id="serverOptAkamai" onclick="changeServer('akamai_server')">🛡️ Server 3 (Akamai)</div>
+          </div>
+        </div>
+
+        <!-- ENGINE SELECTOR BUTTON -->
+        <div class="relative">
+          <button id="btnEngineSelect" class="bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/40 text-yellow-300 px-3 py-1.5 rounded-lg text-xs font-bold transition backdrop-blur-md flex items-center gap-1">
+            <span id="currentEngineLabel">⚡ Engine: Shaka</span>
+            <span class="material-icons-round text-base">expand_more</span>
+          </button>
+
+          <!-- Engine Select Popup Menu -->
+          <div class="ott-menu-popup" id="engineMenu" style="top: 45px; right: 0; bottom: auto;">
+            <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-2">Select Player Engine</div>
+            <div class="ott-menu-item active" onclick="switchEngine('shaka')">⚡ Engine 1: Shaka (Default)</div>
+            <div class="ott-menu-item" onclick="switchEngine('jw')">🍿 Engine 2: JW Player</div>
+            <div class="ott-menu-item" onclick="switchEngine('fc')">🔥 Engine 3: FC HLS Player</div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Center Play/Skip Controls -->
+    <!-- Center Controls -->
     <div class="center-controls">
       <button class="btn-circle-action" id="btnRewind" title="Rewind 10s">
         <span class="material-icons-round text-2xl">replay_10</span>
@@ -203,22 +222,18 @@
 
     <!-- Bottom Controls Bar -->
     <div class="p-4 md:p-6 flex flex-col gap-3">
-      
-      <!-- Seekbar -->
       <div class="seekbar-wrap" id="seekbar">
         <div class="seekbar-fill" id="seekFill">
           <div class="seekbar-handle"></div>
         </div>
       </div>
 
-      <!-- Controls Row -->
       <div class="flex items-center justify-between text-white">
         <div class="flex items-center gap-4">
           <button id="btnPlay" class="hover:text-orange-500 transition">
             <span class="material-icons-round text-2xl" id="playIcon">pause</span>
           </button>
 
-          <!-- Volume Slider -->
           <div class="flex items-center gap-2 group">
             <button id="btnMute" class="hover:text-orange-500 transition">
               <span class="material-icons-round text-2xl" id="volumeIcon">volume_up</span>
@@ -281,7 +296,7 @@
 <script>
 let currentPayload = null;
 let activeServerType = "amazon_server";
-let activeEngine = "shaka"; // 'shaka' | 'jw' | 'fc'
+let activeEngine = "shaka"; 
 let shakaPlayer = null;
 let fcHls = null;
 let videoElem = null;
@@ -307,10 +322,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
+  updateServerMenuLabels();
   initShakaEngine();
   setupUIEvents();
   setupKeyboardShortcuts();
 });
+
+function showLoader(msg = "CONNECTING SECURE STREAM...") {
+  document.getElementById("loaderText").textContent = msg;
+  document.getElementById("loader").style.display = "flex";
+}
+
+function hideLoader() {
+  document.getElementById("loader").style.display = "none";
+}
 
 function getStreamUrl() {
   const s = currentPayload.servers || {};
@@ -330,7 +355,20 @@ async function initShakaEngine() {
   shaka.polyfill.installAll();
   if (!shaka.Player.isBrowserSupported()) return;
 
+  showLoader("LOADING STREAM...");
+
+  // Destroy previous instance to prevent black screen canvas lock
+  if (shakaPlayer) {
+    try { await shakaPlayer.destroy(); } catch(e) {}
+    shakaPlayer = null;
+  }
+
   shakaPlayer = new shaka.Player(videoElem);
+
+  // Request Header Interceptor
+  shakaPlayer.getNetworkingEngine().registerRequestFilter((type, request) => {
+    request.headers['Referer'] = 'https://watch.tataplay.com/';
+  });
 
   const parsedDrm = parseDRM(currentPayload.drm);
   if (parsedDrm) {
@@ -340,8 +378,11 @@ async function initShakaEngine() {
   shakaPlayer.addEventListener('variantchanged', onQualityChanged);
 
   try {
-    await shakaPlayer.load(getStreamUrl());
-    document.getElementById("loader").style.display = "none";
+    const streamUrl = getStreamUrl();
+    if(!streamUrl) throw new Error("Server URL Empty");
+
+    await shakaPlayer.load(streamUrl);
+    hideLoader();
 
     const playPromise = videoElem.play();
     if (playPromise !== undefined) {
@@ -353,13 +394,71 @@ async function initShakaEngine() {
     populateQualityMenu();
   } catch (err) {
     console.error("Shaka error:", err);
-    document.getElementById("loader").style.display = "none";
-    switchEngine('jw'); // Fallback to JW Engine
+    
+    // Auto-Fallback to next available server if first fails
+    if (activeServerType === "amazon_server" && currentPayload.servers?.cloudfront_server) {
+      console.log("Amazon server failed. Auto-switching to Cloudfront Server...");
+      changeServer("cloudfront_server");
+    } else if (activeServerType !== "akamai_server" && currentPayload.servers?.akamai_server) {
+      console.log("Auto-switching to Akamai Server...");
+      changeServer("akamai_server");
+    } else {
+      hideLoader();
+      alert("Selected Server Network Error. Trying Backup Engine...");
+      switchEngine('jw');
+    }
   }
+}
+
+// SERVER SWITCHING LOGIC (IN-PLAYER)
+function changeServer(serverKey) {
+  const s = currentPayload.servers || {};
+  if (!s[serverKey]) {
+    alert("This server is not available for this stream.");
+    return;
+  }
+
+  activeServerType = serverKey;
+  sessionStorage.setItem("__EV_TITU_SERVER__", serverKey);
+  
+  updateServerMenuLabels();
+
+  if (activeEngine === 'shaka') {
+    initShakaEngine();
+  } else if (activeEngine === 'jw') {
+    initJWEngine();
+  } else if (activeEngine === 'fc') {
+    initFCEngine();
+  }
+}
+
+function updateServerMenuLabels() {
+  const labelMap = {
+    amazon_server: "🌐 Server 1 (Amazon)",
+    cloudfront_server: "⚡ Server 2 (Cloudfront)",
+    akamai_server: "🛡️ Server 3 (Akamai)"
+  };
+
+  const badgeMap = {
+    amazon_server: "Server: Amazon CDN",
+    cloudfront_server: "Server: Cloudfront Fast",
+    akamai_server: "Server: Akamai Secure"
+  };
+
+  document.getElementById("currentServerLabel").textContent = labelMap[activeServerType] || "🌐 Server 1";
+  document.getElementById("activeServerBadge").textContent = badgeMap[activeServerType] || "Server: Active";
+
+  // Highlight active menu item
+  document.getElementById("serverOptAmazon").classList.toggle("active", activeServerType === "amazon_server");
+  document.getElementById("serverOptCloudfront").classList.toggle("active", activeServerType === "cloudfront_server");
+  document.getElementById("serverOptAkamai").classList.toggle("active", activeServerType === "akamai_server");
+
+  document.getElementById("serverMenu").classList.remove("active");
 }
 
 // ENGINE 2: JW PLAYER
 function initJWEngine() {
+  showLoader("INIT JW PLAYER...");
   jwplayer.key = CONFIG.JW_KEY;
   const parsedDrm = parseDRM(currentPayload.drm);
   let jwDrmObj = {};
@@ -374,10 +473,13 @@ function initJWEngine() {
     width: "100%", height: "100%",
     autostart: true, stretching: "uniform"
   });
+
+  hideLoader();
 }
 
-// ENGINE 3: FC HLS PLAYER ENGINE (from fcplayer.html)
+// ENGINE 3: FC HLS PLAYER ENGINE
 function initFCEngine() {
+  showLoader("INIT FC HLS PLAYER...");
   const fcVid = document.getElementById("fcVideo");
   const streamUrl = getStreamUrl();
 
@@ -387,11 +489,15 @@ function initFCEngine() {
     fcHls.loadSource(streamUrl);
     fcHls.attachMedia(fcVid);
     fcHls.on(Hls.Events.MANIFEST_PARSED, () => {
+      hideLoader();
       fcVid.play().catch(() => {});
     });
   } else if (fcVid.canPlayType('application/vnd.apple.mpegurl')) {
     fcVid.src = streamUrl;
+    hideLoader();
     fcVid.play().catch(() => {});
+  } else {
+    hideLoader();
   }
 }
 
@@ -403,30 +509,22 @@ function switchEngine(engineType) {
   const fcWrap = document.getElementById("fc-player-container");
   const ottOverlay = document.getElementById("ottOverlay");
   const currentLabel = document.getElementById("currentEngineLabel");
-  const engineBadge = document.getElementById("engineBadgeText");
 
-  // Hide all engine containers by default
   jwWrap.style.display = "none";
   fcWrap.style.display = "none";
 
-  // Reset Engine Menu Options
-  document.querySelectorAll("#engineMenu .ott-menu-item").forEach(el => el.classList.remove("active"));
-
   if (engineType === 'shaka') {
     currentLabel.textContent = "⚡ Engine: Shaka";
-    engineBadge.textContent = "Shaka Engine (DRM HD)";
     ottOverlay.style.display = "flex";
-    if (!shakaPlayer) initShakaEngine();
+    initShakaEngine();
   } 
   else if (engineType === 'jw') {
     currentLabel.textContent = "🍿 Engine: JW Player";
-    engineBadge.textContent = "JW Engine (Backup)";
     jwWrap.style.display = "block";
     initJWEngine();
   } 
   else if (engineType === 'fc') {
-    currentLabel.textContent = "🔥 Engine: FC HLS Player";
-    engineBadge.textContent = "FC Engine (HLS.js)";
+    currentLabel.textContent = "🔥 Engine: FC Player";
     fcWrap.style.display = "block";
     initFCEngine();
   }
@@ -508,6 +606,11 @@ function setupUIEvents() {
     toggleMenu("speedMenu");
   };
 
+  document.getElementById("btnServerSelect").onclick = (e) => {
+    e.stopPropagation();
+    toggleMenu("serverMenu");
+  };
+
   document.getElementById("btnEngineSelect").onclick = (e) => {
     e.stopPropagation();
     toggleMenu("engineMenu");
@@ -516,6 +619,7 @@ function setupUIEvents() {
   document.addEventListener("click", () => {
     document.getElementById("qualityMenu").classList.remove("active");
     document.getElementById("speedMenu").classList.remove("active");
+    document.getElementById("serverMenu").classList.remove("active");
     document.getElementById("engineMenu").classList.remove("active");
   });
 }
