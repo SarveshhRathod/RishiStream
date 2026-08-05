@@ -2,11 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#0b0f19">
-    <title>StreamGod — Live Dashboard</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>StreamGod — Live Streaming</title>
 
-    <!-- Classic, SVG Favicon & Web Manifest -->
+    <!-- StreamGod Favicons (Native Browser Look) -->
     <link rel="icon" type="image/svg+xml" href="https://assetstitu.vercel.app/StreamGod/favicon.svg">
     <link rel="icon" type="image/png" sizes="96x96" href="https://assetstitu.vercel.app/StreamGod/favicon-96x96.png">
     <link rel="shortcut icon" href="https://assetstitu.vercel.app/StreamGod/favicon.ico">
@@ -16,189 +18,120 @@
     <!-- Google Font: Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600&display=swap" rel="stylesheet">
-    
-    <!-- Tailwind CSS & FontAwesome -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <!-- External Configuration -->
-    <script src="config.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0b0f19; }
-        .glow-box { box-shadow: 0 0 25px -5px rgba(99, 102, 241, 0.12); }
-        .glow-box-hover:hover { box-shadow: 0 0 35px 0px rgba(139, 92, 246, 0.25); border-color: rgba(167, 139, 250, 0.4); }
-        .glow-blocked { box-shadow: 0 0 50px rgba(225, 29, 72, 0.25); }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #0b0f19;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        
+        /* 100% Seamless Fullscreen App iFrame */
+        #appFrame {
+            width: 100vw;
+            height: 100vh;
+            border: none;
+            outline: none;
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 10;
+            background-color: #0b0f19;
+        }
+
+        /* Native Dark Preloader (No White Flash) */
+        #preloader {
+            position: fixed;
+            inset: 0;
+            background-color: #0b0f19;
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        #preloader.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        .spinner {
+            width: 44px;
+            height: 44px;
+            border: 3px solid rgba(168, 85, 247, 0.15);
+            border-top-color: #a855f7;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.25);
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
-<body class="text-slate-300 antialiased min-h-screen flex flex-col selection:bg-purple-500/30 selection:text-purple-200">
+<body>
 
-    <!-- Ambient Glow Background -->
-    <div class="fixed top-0 left-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-[120px] pointer-events-none"></div>
-    <div class="fixed bottom-0 right-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none"></div>
-
-    <!-- BLOCKED UI OVERLAY (Shown if License Fails) -->
-    <div id="blockedUI" class="fixed inset-0 z-50 bg-[#0b0f19] flex-col justify-between hidden">
-        <header class="bg-[#0b0f19]/80 backdrop-blur-xl border-b border-white/5 py-4 px-6 flex justify-center">
-            <img src="https://assetstitu.vercel.app/StreamGod/StreamGod.svg" alt="StreamGod Logo" class="h-12 sm:h-13 w-auto object-contain">
-        </header>
-        <main class="flex-grow flex items-center justify-center p-4">
-            <div class="bg-slate-900/80 border border-rose-500/30 w-full max-w-md rounded-3xl p-8 text-center flex flex-col items-center gap-5 glow-blocked backdrop-blur-xl">
-                <div class="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 text-3xl shadow-[0_0_25px_rgba(225,29,72,0.3)]">
-                    <i class="fa-solid fa-shield-halved"></i>
-                </div>
-                <div>
-                    <h1 class="text-xl font-light text-white tracking-wide">Access Suspended</h1>
-                    <p id="blockedMessage" class="text-xs text-slate-400 font-extralight mt-2 leading-relaxed">
-                        Access to this service has been suspended by the owner.
-                    </p>
-                </div>
-                <a id="contactAdminBtn" href="#" target="_blank" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-rose-600/30 to-purple-600/30 hover:from-rose-600/50 hover:to-purple-600/50 border border-rose-500/30 text-rose-200 text-xs font-light tracking-wider transition-all shadow-[0_0_20px_rgba(225,29,72,0.2)]">
-                    <i class="fa-brands fa-telegram mr-1.5"></i> Contact Admin
-                </a>
-            </div>
-        </main>
-        <footer class="border-t border-white/5 py-6 text-center text-xs text-slate-600 font-extralight">
-            &copy; StreamGod Security Protocol
-        </footer>
+    <!-- Smooth Native Loading Screen -->
+    <div id="preloader">
+        <img src="https://assetstitu.vercel.app/StreamGod/StreamGod.svg" alt="StreamGod" style="height: 48px; width: auto;">
+        <div class="spinner"></div>
+        <p style="color: #64748b; font-size: 11px; font-weight: 300; letter-spacing: 1.5px;">LOADING APP...</p>
     </div>
 
-    <!-- MAIN APP CONTENT -->
-    <div id="mainApp" class="flex-col min-h-screen justify-between flex">
-        <header class="sticky top-0 z-40 bg-[#0b0f19]/70 backdrop-blur-xl border-b border-white/5 py-4 px-6 transition-all">
-            <div class="max-w-7xl mx-auto flex items-center justify-between">
-                <a href="index.html" class="flex items-center space-x-3 group">
-                    <img src="https://assetstitu.vercel.app/StreamGod/StreamGod.svg" alt="StreamGod Logo" class="h-12 sm:h-13 w-auto object-contain transition-transform duration-300 group-hover:scale-105">
-                </a>
-                <a id="telegramHeaderBtn" href="#" target="_blank" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-slate-200 font-light tracking-wide flex items-center gap-2 transition-all hover:shadow-[0_0_20px_rgba(168,85,247,0.25)]">
-                    <i class="fa-brands fa-telegram text-purple-400 text-sm"></i> Telegram
-                </a>
-            </div>
-        </header>
+    <!-- Embedded Native Viewport iFrame -->
+    <iframe 
+        id="appFrame" 
+        src="" 
+        allow="autoplay; fullscreen; encrypted-media; picture-in-picture; accelerometer; gyroscope; clipboard-write; microphone; camera" 
+        allowfullscreen="true"
+        webkitallowfullscreen="true"
+        mozallowfullscreen="true">
+    </iframe>
 
-        <main class="max-w-7xl mx-auto px-6 py-10 flex-grow w-full relative z-10">
-            <div class="flex items-center justify-between mb-8">
-                <div>
-                    <h1 class="text-2xl font-light text-white tracking-wide">Live Matches</h1>
-                    <p class="text-xs text-slate-500 font-extralight mt-1">Select an event to start smooth streaming</p>
-                </div>
-                <span id="matchCount" class="text-xs font-light text-slate-400 bg-white/5 px-3 py-1.5 rounded-full border border-white/5">
-                    0 Available
-                </span>
-            </div>
-
-            <div id="matchesContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Loaded Dynamically via JS -->
-                <div class="text-center col-span-full py-20 bg-slate-900/30 rounded-3xl border border-white/5">
-                    <p class="text-slate-500 font-light text-sm animate-pulse">Loading Live Matches...</p>
-                </div>
-            </div>
-        </main>
-
-        <footer class="border-t border-white/5 py-6 text-center text-xs text-slate-600 font-extralight">
-            &copy; StreamGod Engine
-        </footer>
-    </div>
-
-    <!-- LICENSE CHECK & DATA LOADER SCRIPT (Can be encrypted/obfuscated) -->
     <script>
-        (async function initDashboard() {
-            const LICENSE_URL = "https://assetstitu.vercel.app/t2.json?v=" + Date.now();
+        // ========================================================
+        // CONFIGURATION: Apne InfinityFree Domain ka URL Yahan Dalein
+        // ========================================================
+        const INFINITY_FREE_URL = "https://titu.ct.ws/stream/"; // <-- Replace with your actual InfinityFree domain
 
-            // 1. Verify License Status
-            try {
-                const licRes = await fetch(LICENSE_URL);
-                const licData = await licRes.json();
+        function initApp() {
+            const iframe = document.getElementById('appFrame');
+            const preloader = document.getElementById('preloader');
 
-                if (!licData || licData.status !== 'active') {
-                    showBlockedScreen(licData ? licData.message : 'Access to this service has been suspended.');
-                    return;
-                }
-            } catch (err) {
-                console.error("License Verification Error:", err);
-                showBlockedScreen("Unable to verify security license.");
-                return;
-            }
+            // URL Parameters Auto Forwarding (e.g., play.php?id=XYZ links ko automatically pass karega)
+            const currentParams = window.location.search;
+            const targetUrl = INFINITY_FREE_URL.replace(/\/$/, "") + (currentParams ? currentParams : "");
 
-            // Set Telegram Links
-            const tgUrl = (typeof CONFIG !== 'undefined' && CONFIG.TELEGRAM_CHANNEL_URL) ? CONFIG.TELEGRAM_CHANNEL_URL : 'https://t.me/StreamGodLive';
-            document.getElementById('telegramHeaderBtn').href = tgUrl;
-            document.getElementById('contactAdminBtn').href = tgUrl;
+            iframe.src = targetUrl;
 
-            // 2. Load Live Matches Data
-            try {
-                const jsonUrl = (typeof CONFIG !== 'undefined' && CONFIG.STREAM_JSON_URL) ? CONFIG.STREAM_JSON_URL : '';
-                const dataRes = await fetch(jsonUrl);
-                const data = await dataRes.json();
+            // Hide preloader when app is loaded
+            iframe.onload = function() {
+                setTimeout(() => {
+                    preloader.classList.add('hidden');
+                }, 400);
+            };
 
-                let matches = [];
-                if (data && data.Matches && Array.isArray(data.Matches)) {
-                    matches = data.Matches;
-                } else if (Array.isArray(data)) {
-                    matches = data;
-                }
-
-                renderMatches(matches);
-            } catch (err) {
-                console.error("Data Load Error:", err);
-                document.getElementById('matchesContainer').innerHTML = `
-                    <div class="text-center col-span-full py-20 bg-slate-900/30 rounded-3xl border border-white/5">
-                        <p class="text-rose-400 font-light text-sm">Failed to load matches. Please try again later.</p>
-                    </div>
-                `;
-            }
-        })();
-
-        function showBlockedScreen(msg) {
-            document.getElementById('mainApp').style.display = 'none';
-            document.getElementById('blockedMessage').innerText = msg;
-            document.getElementById('contactAdminBtn').href = (typeof CONFIG !== 'undefined' && CONFIG.TELEGRAM_CHANNEL_URL) ? CONFIG.TELEGRAM_CHANNEL_URL : '#';
-            document.getElementById('blockedUI').style.display = 'flex';
+            // Max Timeout Fallback (5 seconds)
+            setTimeout(() => {
+                preloader.classList.add('hidden');
+            }, 5000);
         }
 
-        function renderMatches(matches) {
-            const container = document.getElementById('matchesContainer');
-            document.getElementById('matchCount').innerText = `${matches.length} Available`;
-
-            if (!matches || matches.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center col-span-full py-20 bg-slate-900/30 rounded-3xl border border-white/5">
-                        <p class="text-slate-500 font-light text-sm">No live streams found right now.</p>
-                    </div>
-                `;
-                return;
-            }
-
-            let html = '';
-            matches.forEach(match => {
-                const matchId = encodeURIComponent(match.id || '');
-                const title = match.event_name || match.name || 'Live Broadcast';
-                const image = match.image || 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=80&w=600&auto=format&fit=crop';
-
-                html += `
-                    <div class="group bg-slate-900/40 backdrop-blur-md rounded-2xl border border-white/5 overflow-hidden transition-all duration-500 glow-box glow-box-hover flex flex-col justify-between">
-                        <div class="relative overflow-hidden aspect-video">
-                            <img src="${image}" alt="Thumbnail" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-90 group-hover:opacity-100" onerror="this.src='https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=80&w=600&auto=format&fit=crop';">
-                            <div class="absolute top-3 left-3 flex items-center gap-1.5 bg-black/40 backdrop-blur-md border border-rose-500/30 px-2.5 py-1 rounded-full">
-                                <span class="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse"></span>
-                                <span class="text-[10px] font-light tracking-wider text-rose-300 uppercase">LIVE</span>
-                            </div>
-                        </div>
-                        <div class="p-5 flex-grow flex flex-col justify-between">
-                            <h2 class="text-sm font-light text-slate-200 line-clamp-2 leading-relaxed mb-6 group-hover:text-white transition-colors">
-                                ${title}
-                            </h2>
-                            <a href="play.html?id=${matchId}" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-purple-600/20 to-indigo-600/20 hover:from-purple-600/40 hover:to-indigo-600/40 border border-purple-500/30 text-purple-200 text-xs font-light text-center tracking-wider transition-all duration-300 flex items-center justify-center gap-2 group-hover:shadow-[0_0_20px_rgba(168,85,247,0.3)]">
-                                <i class="fa-solid fa-play text-[10px]"></i> Watch Stream
-                            </a>
-                        </div>
-                    </div>
-                `;
-            });
-
-            container.innerHTML = html;
-        }
+        document.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
 </html>
